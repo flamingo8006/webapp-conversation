@@ -1,16 +1,15 @@
 import type { FC } from 'react'
 import React from 'react'
-import {
-  Bars3Icon,
-  PencilSquareIcon,
-} from '@heroicons/react/24/solid'
-import AppIcon from '@/app/components/base/app-icon'
+import { Menu, PenSquare, MessageSquare } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+
 export interface IHeaderProps {
   title: string
   isMobile?: boolean
   onShowSideBar?: () => void
   onCreateNewChat?: () => void
 }
+
 const Header: FC<IHeaderProps> = ({
   title,
   isMobile,
@@ -18,26 +17,36 @@ const Header: FC<IHeaderProps> = ({
   onCreateNewChat,
 }) => {
   return (
-    <div className="shrink-0 flex items-center justify-between h-12 px-3 bg-gray-100">
+    <div className="shrink-0 flex items-center justify-between h-12 px-3 bg-muted/50 border-b">
       {isMobile
         ? (
-          <div
-            className='flex items-center justify-center h-8 w-8 cursor-pointer'
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
             onClick={() => onShowSideBar?.()}
           >
-            <Bars3Icon className="h-4 w-4 text-gray-500" />
-          </div>
+            <Menu className="h-4 w-4" />
+          </Button>
         )
         : <div></div>}
-      <div className='flex items-center space-x-2'>
-        <AppIcon size="small" />
-        <div className=" text-sm text-gray-800 font-bold">{title}</div>
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+          <MessageSquare className="w-4 h-4 text-white" />
+        </div>
+        <div className="text-sm text-foreground font-bold">{title}</div>
       </div>
       {isMobile
         ? (
-          <div className='flex items-center justify-center h-8 w-8 cursor-pointer' onClick={() => onCreateNewChat?.()} >
-            <PencilSquareIcon className="h-4 w-4 text-gray-500" />
-          </div>)
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onCreateNewChat?.()}
+          >
+            <PenSquare className="h-4 w-4" />
+          </Button>
+        )
         : <div></div>}
     </div>
   )

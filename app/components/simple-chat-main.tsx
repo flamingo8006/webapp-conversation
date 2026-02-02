@@ -4,10 +4,11 @@ import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import produce, { setAutoFreeze } from 'immer'
 import { useBoolean, useGetState } from 'ahooks'
+import { MessageSquare } from 'lucide-react'
 import useConversation from '@/hooks/use-conversation'
 import Toast from '@/app/components/base/toast'
-import SimpleHeader from '@/app/components/simple-header'
 import { fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
+import { Card } from '@/components/ui/card'
 import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
@@ -617,18 +618,16 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
   if (!appId || !APP_INFO || !promptConfig) { return <Loading type='app' /> }
 
   return (
-    <div className='fixed inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 overflow-hidden'>
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 overflow-hidden">
       {/* 헤더 - 고정 */}
-      <header className='absolute top-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm'>
-        <div className='w-full px-3 sm:px-4 md:px-6'>
-          <div className='flex items-center justify-center h-14 sm:h-16'>
-            <div className='flex items-center space-x-2 sm:space-x-3 min-w-0'>
-              <div className='w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0'>
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
+      <header className="absolute top-0 left-0 right-0 z-30 bg-background/80 backdrop-blur-md border-b shadow-sm">
+        <div className="w-full px-3 sm:px-4 md:px-6">
+          <div className="flex items-center justify-center h-14 sm:h-16">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <h1 className='text-sm sm:text-base md:text-lg font-bold text-gray-800 truncate'>
+              <h1 className="text-sm sm:text-base md:text-lg font-bold text-foreground truncate">
                 {displayAppName}
               </h1>
             </div>
@@ -637,13 +636,13 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
       </header>
 
       {/* 메인 채팅 영역 */}
-      <main className='absolute top-14 sm:top-16 left-0 right-0 bottom-0 px-2 sm:px-4 md:px-6 py-3 sm:py-4'>
-        <div className='w-full h-full max-w-4xl mx-auto'>
+      <main className="absolute top-14 sm:top-16 left-0 right-0 bottom-0 px-2 sm:px-4 md:px-6 py-3 sm:py-4">
+        <div className="w-full h-full max-w-4xl mx-auto">
           {/* 채팅 컨테이너 */}
-          <div className='h-full bg-white rounded-xl sm:rounded-2xl shadow-xl overflow-hidden flex flex-col'>
+          <Card className="h-full rounded-xl sm:rounded-2xl shadow-xl overflow-hidden flex flex-col">
             {/* 채팅 메시지 영역 */}
-            <div className='flex-1 overflow-hidden px-2 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6'>
-              <div className='h-full w-full max-w-3xl mx-auto'>
+            <div className="flex-1 overflow-hidden px-2 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
+              <div className="h-full w-full max-w-3xl mx-auto">
                 <SimpleChat
                   chatList={chatList}
                   onSend={handleSend}
@@ -657,15 +656,15 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
             </div>
 
             {/* Footer - DGIST AI 로고 */}
-            <div className='py-2 sm:py-3 px-3 sm:px-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0'>
-              <div className='flex items-center justify-center space-x-1.5 sm:space-x-2 text-[10px] sm:text-xs text-gray-500'>
-                <div className='w-3.5 h-3.5 sm:w-4 sm:h-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center flex-shrink-0'>
-                  <span className='text-white text-[7px] sm:text-[8px] font-bold'>D</span>
+            <div className="py-2 sm:py-3 px-3 sm:px-4 border-t bg-muted/50 flex-shrink-0">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground">
+                <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-[7px] sm:text-[8px] font-bold">D</span>
                 </div>
-                <span className='whitespace-nowrap'>Powered by <span className='font-semibold text-gray-700'>DGIST AI</span></span>
+                <span className="whitespace-nowrap">Powered by <span className="font-semibold text-foreground">DGIST AI</span></span>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </main>
     </div>

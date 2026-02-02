@@ -1,18 +1,11 @@
 import React from 'react'
 import type { FC } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ChatBubbleOvalLeftEllipsisIcon,
-  PencilSquareIcon,
-} from '@heroicons/react/24/outline'
-import { ChatBubbleOvalLeftEllipsisIcon as ChatBubbleOvalLeftEllipsisSolidIcon } from '@heroicons/react/24/solid'
-import Button from '@/app/components/base/button'
-// import Card from './card'
+import { MessageCircle, PenSquare } from 'lucide-react'
 import type { ConversationItem } from '@/types/app'
-
-function classNames(...classes: any[]) {
-  return classes.filter(Boolean).join(' ')
-}
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
 
 const MAX_CONVERSATION_LENTH = 20
 
@@ -30,56 +23,56 @@ const Sidebar: FC<ISidebarProps> = ({
   list,
 }) => {
   const { t } = useTranslation()
+
   return (
-    <div
-      className="shrink-0 flex flex-col overflow-y-auto bg-white pc:w-[244px] tablet:w-[192px] mobile:w-[240px]  border-r border-gray-200 tablet:h-[calc(100vh_-_3rem)] mobile:h-screen"
-    >
+    <div className="shrink-0 flex flex-col overflow-hidden bg-background pc:w-[244px] tablet:w-[192px] mobile:w-[240px] border-r tablet:h-[calc(100vh_-_3rem)] mobile:h-screen">
       {list.length < MAX_CONVERSATION_LENTH && (
-        <div className="flex flex-shrink-0 p-4 !pb-0">
+        <div className="flex flex-shrink-0 p-4 pb-0">
           <Button
+            variant="outline"
             onClick={() => { onCurrentIdChange('-1') }}
-            className="group block w-full flex-shrink-0 !justify-start !h-9 text-primary-600 items-center text-sm"
+            className="w-full justify-start gap-2 h-9 text-primary"
           >
-            <PencilSquareIcon className="mr-2 h-4 w-4" /> {t('app.chat.newChat')}
+            <PenSquare className="h-4 w-4" />
+            {t('app.chat.newChat')}
           </Button>
         </div>
       )}
 
-      <nav className="mt-4 flex-1 space-y-1 bg-white p-4 !pt-0">
-        {list.map((item) => {
-          const isCurrent = item.id === currentId
-          const ItemIcon
-            = isCurrent ? ChatBubbleOvalLeftEllipsisSolidIcon : ChatBubbleOvalLeftEllipsisIcon
-          return (
-            <div
-              onClick={() => onCurrentIdChange(item.id)}
-              key={item.id}
-              className={classNames(
-                isCurrent
-                  ? 'bg-primary-50 text-primary-600'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-700',
-                'group flex items-center rounded-md px-2 py-2 text-sm font-medium cursor-pointer',
-              )}
-            >
-              <ItemIcon
-                className={classNames(
+      <ScrollArea className="flex-1 mt-4">
+        <nav className="space-y-1 px-4">
+          {list.map((item) => {
+            const isCurrent = item.id === currentId
+            return (
+              <div
+                onClick={() => onCurrentIdChange(item.id)}
+                key={item.id}
+                className={cn(
+                  'group flex items-center rounded-md px-2 py-2 text-sm font-medium cursor-pointer transition-colors',
                   isCurrent
-                    ? 'text-primary-600'
-                    : 'text-gray-400 group-hover:text-gray-500',
-                  'mr-3 h-5 w-5 flex-shrink-0',
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
-                aria-hidden="true"
-              />
-              {item.name}
-            </div>
-          )
-        })}
-      </nav>
-      {/* <a className="flex flex-shrink-0 p-4" href="https://langgenius.ai/" target="_blank">
-        <Card><div className="flex flex-row items-center"><ChatBubbleOvalLeftEllipsisSolidIcon className="text-primary-600 h-6 w-6 mr-2" /><span>LangGenius</span></div></Card>
-      </a> */}
-      <div className="flex flex-shrink-0 pr-4 pb-4 pl-4">
-        <div className="text-gray-400 font-normal text-xs">© {copyRight} {(new Date()).getFullYear()}</div>
+              >
+                <MessageCircle
+                  className={cn(
+                    'mr-3 h-5 w-5 flex-shrink-0 transition-colors',
+                    isCurrent
+                      ? 'text-primary'
+                      : 'text-muted-foreground group-hover:text-foreground'
+                  )}
+                />
+                <span className="truncate">{item.name}</span>
+              </div>
+            )
+          })}
+        </nav>
+      </ScrollArea>
+
+      <div className="flex flex-shrink-0 p-4 border-t">
+        <div className="text-muted-foreground font-normal text-xs">
+          © {copyRight} {(new Date()).getFullYear()}
+        </div>
       </div>
     </div>
   )
