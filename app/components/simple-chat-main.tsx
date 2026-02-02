@@ -282,9 +282,11 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
 
     if (!currInputs || !promptConfig?.prompt_variables) { return true }
 
-    const inputLens = Object.values(currInputs).length
+    // 필수 입력 변수가 없으면 통과
     const promptVariablesLens = promptConfig.prompt_variables.length
+    if (promptVariablesLens === 0) { return true }
 
+    const inputLens = Object.values(currInputs).length
     const emptyInput = inputLens < promptVariablesLens || Object.values(currInputs).find(v => !v)
     if (emptyInput) {
       logError(t('app.errorMessage.valueOfVarRequired'))
@@ -533,10 +535,15 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
           },
         ))
       },
-      onError() {
+      onError(errorMessage?: string) {
         setRespondingFalse()
+        // 에러 메시지를 대화창에 표시
         setChatList(produce(getChatList(), (draft) => {
-          draft.splice(draft.findIndex(item => item.id === placeholderAnswerId), 1)
+          const answerIndex = draft.findIndex(item => item.id === placeholderAnswerId)
+          if (answerIndex !== -1) {
+            draft[answerIndex].content = errorMessage || '오류가 발생했습니다.'
+            draft[answerIndex].isError = true
+          }
         }))
       },
       onWorkflowStarted: ({ workflow_run_id, task_id }) => {

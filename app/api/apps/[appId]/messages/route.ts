@@ -23,12 +23,13 @@ export async function GET(
     // Phase 7: 인증/익명 사용자 구분
     const user = await getUserFromRequest(request)
     const sessionId = request.headers.get('x-session-id')
-    const isAnonymous = request.headers.get('x-is-anonymous') === 'true'
+    // middleware의 x-is-anonymous 헤더 또는 sessionId 존재 여부로 익명 판단
+    const isAnonymous = request.headers.get('x-is-anonymous') === 'true' || (!user && !!sessionId)
 
     let difyUser: string
 
-    // 공개 챗봇 + 익명 허용
-    if (app.isPublic && app.allowAnonymous && isAnonymous && sessionId) {
+    // 공개 챗봇 + 익명 허용 (sessionId가 있고 user가 없으면 익명)
+    if (app.isPublic && app.allowAnonymous && sessionId && !user) {
       difyUser = `anon_${appId}:${sessionId}`
     }
     else {

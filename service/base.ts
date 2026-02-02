@@ -2,7 +2,7 @@ import { API_PREFIX } from '@/config'
 import Toast from '@/app/components/base/toast'
 import type { AnnotationReply, MessageEnd, MessageReplace, ThoughtItem } from '@/app/components/chat/type'
 import type { VisionFile } from '@/types/app'
-import { getSessionId } from '@/lib/session-manager'
+import { getOrCreateSessionId } from '@/lib/session-manager'
 
 const TIME_OUT = 100000
 
@@ -251,7 +251,7 @@ const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent }: I
   const options = Object.assign({}, baseOptions, fetchOptions)
 
   // Phase 7: 익명 사용자 sessionId 헤더 추가
-  const sessionId = getSessionId()
+  const sessionId = getOrCreateSessionId()
   if (sessionId) {
     options.headers.set('X-Session-Id', sessionId)
   }
@@ -296,8 +296,10 @@ const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent }: I
                   Toast.notify({ type: 'error', message: 'Invalid token' })
                   return
                 }
-                default:
-                  Toast.notify({ type: 'error', message: bodyJson.message || 'Request failed' })
+                default: {
+                  const errorMessage = bodyJson.error || bodyJson.message || 'Request failed'
+                  Toast.notify({ type: 'error', message: errorMessage })
+                }
               }
             }
             catch (e) {
@@ -347,7 +349,7 @@ export const upload = (fetchOptions: any, appId?: string): Promise<any> => {
     for (const key in options.headers) { xhr.setRequestHeader(key, options.headers[key]) }
 
     // Phase 7: 익명 사용자 sessionId 헤더 추가
-    const sessionId = getSessionId()
+    const sessionId = getOrCreateSessionId()
     if (sessionId) {
       xhr.setRequestHeader('X-Session-Id', sessionId)
     }
@@ -386,7 +388,7 @@ export const ssePost = (
   }, fetchOptions)
 
   // Phase 7: 익명 사용자 sessionId 헤더 추가
-  const sessionId = getSessionId()
+  const sessionId = getOrCreateSessionId()
   if (sessionId) {
     options.headers.set('X-Session-Id', sessionId)
   }
@@ -400,13 +402,13 @@ export const ssePost = (
   globalThis.fetch(urlWithPrefix, options)
     .then((res: any) => {
       if (!/^(2|3)\d{2}$/.test(res.status)) {
-        // eslint-disable-next-line no-new
-        new Promise(() => {
-          res.json().then((data: any) => {
-            Toast.notify({ type: 'error', message: data.message || 'Server Error' })
-          })
+        res.json().then((data: any) => {
+          const errorMessage = data.error || data.message || 'Server Error'
+          // 토스트 대신 onError 콜백으로 전달 (대화창에 표시)
+          onError?.(errorMessage)
+        }).catch(() => {
+          onError?.('Server Error')
         })
-        onError?.('Server Error')
         return
       }
       return handleStream(res, (str: string, isFirstMessage: boolean, moreInfo: IOnDataMoreInfo) => {

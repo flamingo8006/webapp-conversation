@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { ChatClient } from 'dify-client'
 import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
-import { getOrCreateSession, getAnonymousMessageCount } from '@/lib/repositories/chat-session'
+import { getOrCreateSession, getAnonymousMessageCount, saveMessage } from '@/lib/repositories/chat-session'
 
 export async function POST(
   request: NextRequest,
@@ -24,13 +24,14 @@ export async function POST(
     // Phase 7: 인증/익명 사용자 구분
     const user = await getUserFromRequest(request)
     const sessionId = request.headers.get('x-session-id')
-    const isAnonymous = request.headers.get('x-is-anonymous') === 'true'
+    // middleware의 x-is-anonymous 헤더 또는 sessionId 존재 여부로 익명 판단
+    const isAnonymous = request.headers.get('x-is-anonymous') === 'true' || (!user && !!sessionId)
 
     let difyUser: string
     let session
 
-    // 공개 챗봇 + 익명 허용
-    if (app.isPublic && app.allowAnonymous && isAnonymous && sessionId) {
+    // 공개 챗봇 + 익명 허용 (sessionId가 있고 user가 없으면 익명)
+    if (app.isPublic && app.allowAnonymous && sessionId && !user) {
       // 익명 사용자 처리
       session = await getOrCreateSession({
         appId,
@@ -80,6 +81,16 @@ export async function POST(
       conversation_id: conversationId,
       response_mode: responseMode,
     } = body
+
+    // 익명 사용자 메시지 저장 (제한 카운트용)
+    if (isAnonymous && session) {
+      await saveMessage({
+        sessionId: session.id,
+        role: 'user',
+        content: query,
+        files,
+      })
+    }
 
     // 동적으로 ChatClient 생성
     const client = new ChatClient(app.apiKey, app.apiUrl)

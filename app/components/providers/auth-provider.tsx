@@ -32,11 +32,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(data.user)
       }
       else {
+        // 401은 익명 사용자에게 정상 응답이므로 조용히 처리
         setUser(null)
       }
     }
     catch (error) {
-      console.error('Failed to fetch user:', error)
+      // 네트워크 에러만 로그
+      if (!(error instanceof TypeError)) {
+        console.error('Failed to fetch user:', error)
+      }
       setUser(null)
     }
     finally {

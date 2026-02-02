@@ -91,6 +91,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // maxAnonymousMsgs를 숫자로 변환 (빈 문자열이나 null은 null로 처리)
+    const parsedMaxAnonymousMsgs = maxAnonymousMsgs === '' || maxAnonymousMsgs === null || maxAnonymousMsgs === undefined
+      ? null
+      : parseInt(maxAnonymousMsgs, 10)
+
     // 챗봇 앱 생성 (API Key 암호화 저장)
     const app = await createChatbotApp({
       name,
@@ -102,7 +107,7 @@ export async function POST(request: NextRequest) {
       isPublic,
       requireAuth,
       allowAnonymous,
-      maxAnonymousMsgs,
+      maxAnonymousMsgs: parsedMaxAnonymousMsgs,
       createdBy: user.empNo,
     })
 

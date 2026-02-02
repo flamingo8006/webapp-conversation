@@ -2,15 +2,20 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/jwt'
 
-// 인증이 필요 없는 경로
-const publicPaths = [
+// 인증이 필요 없는 경로 (startsWith로 체크)
+const publicPathPrefixes = [
   '/api/auth/login',
   '/api/auth/verify',
+  '/api/apps/public',
   '/login',
   '/_next',
   '/favicon.ico',
   '/public',
-  '/', // Phase 7: 메인 포털 페이지도 익명 접근 허용
+]
+
+// 정확히 일치해야 하는 공개 경로
+const publicExactPaths = [
+  '/', // Phase 7: 메인 포털 페이지만 익명 접근 허용
 ]
 
 // 관리자 전용 경로
@@ -22,8 +27,9 @@ const adminPaths = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // 공개 경로는 통과
-  if (publicPaths.some(path => pathname.startsWith(path))) {
+  // 공개 경로는 통과 (prefix 매칭 또는 정확히 일치)
+  if (publicPathPrefixes.some(path => pathname.startsWith(path)) ||
+      publicExactPaths.includes(pathname)) {
     return NextResponse.next()
   }
 

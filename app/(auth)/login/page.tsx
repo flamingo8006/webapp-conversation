@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Toast from '@/app/components/base/toast'
+import { useAuth } from '@/app/components/providers/auth-provider'
 
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/'
+  const { refreshUser } = useAuth()
 
   const [loginId, setLoginId] = useState('')
   const [password, setPassword] = useState('')
@@ -39,7 +41,8 @@ export default function LoginPage() {
         message: `환영합니다, ${data.user.name}님!`,
       })
 
-      // 리다이렉트
+      // 사용자 상태 갱신 후 리다이렉트
+      await refreshUser()
       router.push(redirect)
     }
     catch (err) {

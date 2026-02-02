@@ -11,15 +11,6 @@ export async function GET(
   try {
     const { appId } = await params
 
-    // 사용자 인증 확인
-    const user = await getUserFromRequest(request)
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 },
-      )
-    }
-
     // 챗봇 앱 조회
     const app = await getChatbotAppWithKey(appId)
     if (!app) {
@@ -29,11 +20,32 @@ export async function GET(
       )
     }
 
+    // Phase 7: 인증/익명 사용자 구분
+    const user = await getUserFromRequest(request)
+    const sessionId = request.headers.get('x-session-id')
+    // middleware의 x-is-anonymous 헤더 또는 sessionId 존재 여부로 익명 판단
+    const isAnonymous = request.headers.get('x-is-anonymous') === 'true' || (!user && !!sessionId)
+
+    let difyUser: string
+
+    // 공개 챗봇 + 익명 허용 (sessionId가 있고 user가 없으면 익명)
+    if (app.isPublic && app.allowAnonymous && sessionId && !user) {
+      difyUser = `anon_${appId}:${sessionId}`
+    }
+    else {
+      // 인증 사용자 처리
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 },
+        )
+      }
+
+      difyUser = `user_${appId}:${user.empNo}`
+    }
+
     // 동적으로 ChatClient 생성
     const client = new ChatClient(app.apiKey, app.apiUrl)
-
-    // Dify user ID
-    const difyUser = `user_${appId}:${user.empNo}`
 
     // 앱 파라미터 조회
     const { data } = await client.getApplicationParameters(difyUser)

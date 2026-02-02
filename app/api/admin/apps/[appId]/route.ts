@@ -102,6 +102,11 @@ export async function PUT(
       maxAnonymousMsgs,
     } = body
 
+    // maxAnonymousMsgs를 숫자로 변환 (빈 문자열이나 null은 null로 처리)
+    const parsedMaxAnonymousMsgs = maxAnonymousMsgs === '' || maxAnonymousMsgs === null || maxAnonymousMsgs === undefined
+      ? null
+      : parseInt(maxAnonymousMsgs, 10)
+
     // 챗봇 앱 수정 (API Key 제공 시 재암호화)
     const app = await updateChatbotApp(appId, {
       name,
@@ -115,7 +120,7 @@ export async function PUT(
       isPublic,
       requireAuth,
       allowAnonymous,
-      maxAnonymousMsgs,
+      maxAnonymousMsgs: parsedMaxAnonymousMsgs,
       updatedBy: user.empNo,
     })
 
