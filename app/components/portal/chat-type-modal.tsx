@@ -38,7 +38,7 @@ export function ChatTypeModal({ app, isOpen, onClose }: ChatTypeModalProps) {
         </DialogHeader>
 
         <div className="space-y-3 pt-2">
-          {/* 샘플형 */}
+          {/* 심플형 */}
           <button
             onClick={handleSimpleChat}
             className="w-full p-4 text-left border-2 border-border rounded-lg hover:border-primary hover:bg-accent transition-colors"
@@ -48,7 +48,7 @@ export function ChatTypeModal({ app, isOpen, onClose }: ChatTypeModalProps) {
                 <MessageSquare className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <p className="font-semibold text-foreground">샘플형</p>
+                <p className="font-semibold text-foreground">심플형</p>
                 <p className="text-sm text-muted-foreground">깔끔하고 세련된 단순 채팅 화면</p>
               </div>
             </div>

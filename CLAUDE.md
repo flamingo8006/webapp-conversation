@@ -30,8 +30,8 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 
 ### Phase 4: 포털 UI ✅
 - [x] 챗봇 목록 포털 페이지
-- [x] SimpleChatMain 컴포넌트 (세련된 샘플형 UI)
-- [x] 채팅 타입 선택 모달 (샘플형/앱형)
+- [x] SimpleChatMain 컴포넌트 (세련된 심플형 UI)
+- [x] 채팅 타입 선택 모달 (심플형/앱형)
 - [x] 대화 이력 DB 저장
 
 ### Phase 5-6: 관리자 콘솔 및 기타 ✅
@@ -144,7 +144,7 @@ webapp-conversation/
 │   │   └── layout.tsx          # 관리자 레이아웃 (사이드바)
 │   ├── (auth)/login/           # 로그인 페이지
 │   ├── (portal)/chat/[appId]/  # 포털 채팅 페이지
-│   ├── simple-chat/[appId]/    # 샘플형 채팅 페이지
+│   ├── simple-chat/[appId]/    # 심플형 채팅 페이지
 │   │
 │   ├── api/
 │   │   ├── auth/               # 인증 API
@@ -161,7 +161,7 @@ webapp-conversation/
 │       ├── admin/              # 관리자 컴포넌트
 │       ├── portal/             # 포털 컴포넌트
 │       ├── providers/          # Context Providers
-│       ├── simple-chat-main.tsx  # 샘플형 채팅 UI
+│       ├── simple-chat-main.tsx  # 심플형 채팅 UI
 │       └── simple-chat.tsx     # 채팅 컴포넌트
 │
 ├── lib/

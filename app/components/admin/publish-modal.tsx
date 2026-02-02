@@ -125,7 +125,7 @@ export function PublishModal({ app, isOpen, onClose }: PublishModalProps) {
                     <MessageSquare className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">샘플형</p>
+                    <p className="font-semibold text-foreground">심플형</p>
                     <p className="text-sm text-muted-foreground">깔끔하고 세련된 단순 채팅 화면</p>
                   </div>
                 </div>
