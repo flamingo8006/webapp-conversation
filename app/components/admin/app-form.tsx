@@ -237,50 +237,68 @@ export function AppForm({ app, mode }: AppFormProps) {
 
           {/* 공개 설정 (Phase 7) */}
           <div>
-            <h3 className="text-lg font-medium mb-4">공개 설정</h3>
+            <h3 className="text-lg font-medium mb-4">접근 설정</h3>
             <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isPublic"
-                  checked={formData.isPublic}
-                  onCheckedChange={(checked) => handleCheckboxChange('isPublic', checked as boolean)}
-                />
-                <Label htmlFor="isPublic" className="cursor-pointer">
-                  공개 챗봇 (포털에 노출)
-                </Label>
+              {/* 포털 노출 설정 */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="isPublic"
+                    checked={formData.isPublic}
+                    onCheckedChange={(checked) => handleCheckboxChange('isPublic', checked as boolean)}
+                  />
+                  <Label htmlFor="isPublic" className="cursor-pointer">
+                    포털에 노출
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-6">
+                  체크하면 메인 포털 페이지의 챗봇 목록에 표시됩니다. 체크하지 않으면 직접 URL로만 접근 가능합니다.
+                </p>
               </div>
 
               {formData.isPublic && (
                 <Card className="ml-6 bg-muted/50">
                   <CardContent className="p-4 space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="requireAuth"
-                        checked={formData.requireAuth}
-                        onCheckedChange={(checked) => handleCheckboxChange('requireAuth', checked as boolean)}
-                      />
-                      <Label htmlFor="requireAuth" className="cursor-pointer">
-                        인증 필수
-                      </Label>
+                    {/* 인증 필수 설정 */}
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="requireAuth"
+                          checked={formData.requireAuth}
+                          onCheckedChange={(checked) => handleCheckboxChange('requireAuth', checked as boolean)}
+                        />
+                        <Label htmlFor="requireAuth" className="cursor-pointer">
+                          로그인 필수
+                        </Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-6">
+                        체크하면 로그인한 사용자만 이 챗봇을 사용할 수 있습니다.
+                      </p>
                     </div>
 
                     {!formData.requireAuth && (
                       <>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="allowAnonymous"
-                            checked={formData.allowAnonymous}
-                            onCheckedChange={(checked) => handleCheckboxChange('allowAnonymous', checked as boolean)}
-                          />
-                          <Label htmlFor="allowAnonymous" className="cursor-pointer">
-                            익명 사용자 허용
-                          </Label>
+                        {/* 익명 사용자 허용 설정 */}
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="allowAnonymous"
+                              checked={formData.allowAnonymous}
+                              onCheckedChange={(checked) => handleCheckboxChange('allowAnonymous', checked as boolean)}
+                            />
+                            <Label htmlFor="allowAnonymous" className="cursor-pointer">
+                              익명 사용자 허용
+                            </Label>
+                          </div>
+                          <p className="text-xs text-muted-foreground ml-6">
+                            체크하면 로그인하지 않은 사용자도 이 챗봇을 사용할 수 있습니다. 세션 ID로 대화가 관리됩니다.
+                          </p>
                         </div>
 
                         {formData.allowAnonymous && (
-                          <div className="space-y-2">
+                          <div className="space-y-2 ml-6">
                             <Label htmlFor="maxAnonymousMsgs">
-                              익명 사용자 최대 메시지 수
+                              익명 사용자 메시지 제한
                             </Label>
                             <Input
                               id="maxAnonymousMsgs"
@@ -289,14 +307,26 @@ export function AppForm({ app, mode }: AppFormProps) {
                               min="0"
                               value={formData.maxAnonymousMsgs}
                               onChange={handleChange}
+                              className="max-w-[200px]"
                             />
                             <p className="text-xs text-muted-foreground">
-                              0이면 무제한
+                              익명 사용자가 보낼 수 있는 최대 메시지 수입니다. 0이면 무제한입니다.
                             </p>
                           </div>
                         )}
                       </>
                     )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* 비공개 챗봇 안내 */}
+              {!formData.isPublic && (
+                <Card className="ml-6 bg-muted/50">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-muted-foreground">
+                      이 챗봇은 포털에 노출되지 않습니다. 로그인한 사용자만 직접 URL 또는 임베드 코드를 통해 접근할 수 있습니다.
+                    </p>
                   </CardContent>
                 </Card>
               )}
