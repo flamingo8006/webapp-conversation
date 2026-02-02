@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 챗봇 앱 테이블
+model ChatbotApp {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  difyAppId       String   @map("dify_app_id")
+  apiKeyEncrypted String   @map("api_key_encrypted")  // 암호화된 API Key
+  apiUrl          String   @default("https://api.dify.ai/v1") @map("api_url")
+  iconUrl         String?  @map("icon_url")
+  isActive        Boolean  @default(true) @map("is_active")
+  sortOrder       Int      @default(0) @map("sort_order")
+
+  // 공개 챗봇 설정 (Phase 7)
+  isPublic          Boolean  @default(false) @map("is_public")           // 공개 챗봇 여부
+  requireAuth       Boolean  @default(true) @map("require_auth")         // 인증 필수 여부
+  allowAnonymous    Boolean  @default(false) @map("allow_anonymous")     // 익명 사용자 허용
+  maxAnonymousMsgs  Int?     @map("max_anonymous_msgs")                  // 익명 사용자 최대 메시지 수 (null=무제한)
+
+  // 감사 필드
+  createdAt       DateTime @default(now()) @map("created_at")
+  createdBy       String?  @map("created_by")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  updatedBy       String?  @map("updated_by")
+  deletedAt       DateTime? @map("deleted_at")
+  deletedBy       String?  @map("deleted_by")
+
+  // 관계
+  sessions        ChatSession[]
+
+  @@map("chatbot_apps")
+}
+
+// 채팅 세션 테이블
+model ChatSession {
+  id                 String   @id @default(cuid())
+
+  // 익명/인증 사용자 구분 (Phase 7)
+  isAnonymous        Boolean  @default(false) @map("is_anonymous")       // 익명 세션 여부
+  sessionId          String?  @map("session_id")                         // 익명 사용자 브라우저 sessionId (UUID)
+
+  // 레거시 인증 사용자 정보 (익명일 경우 null)
+  userId             String?  @map("user_id")      // JWT의 empNo
+  userLoginId        String?  @map("user_login_id") // JWT의 sub (loginId)
+  userName           String?  @map("user_name")
+  appId              String   @map("app_id")
+  difyConversationId String?  @map("dify_conversation_id")
+  title              String?
+  isActive           Boolean  @default(true) @map("is_active")
+  lastMessageAt      DateTime? @map("last_message_at")
+
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // 관계
+  app                ChatbotApp    @relation(fields: [appId], references: [id])
+  messages           ChatMessage[]
+
+  @@index([userId, appId])
+  @@index([sessionId, appId])  // Phase 7: 익명 사용자 조회용
+  @@index([difyConversationId])
+  @@map("chat_sessions")
+}
+
+// 채팅 메시지 테이블
+model ChatMessage {
+  id            String   @id @default(cuid())
+  sessionId     String   @map("session_id")
+  difyMessageId String?  @map("dify_message_id")
+  role          String   // 'user' | 'assistant'
+  content       String   @db.Text
+  files         Json?    // 첨부 파일 정보
+  feedback      String?  // 'like' | 'dislike' | null
+  tokenCount    Int?     @map("token_count")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // 관계
+  session       ChatSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
+  @@index([difyMessageId])
+  @@map("chat_messages")
+}

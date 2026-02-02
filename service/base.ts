@@ -2,6 +2,7 @@ import { API_PREFIX } from '@/config'
 import Toast from '@/app/components/base/toast'
 import type { AnnotationReply, MessageEnd, MessageReplace, ThoughtItem } from '@/app/components/chat/type'
 import type { VisionFile } from '@/types/app'
+import { getSessionId } from '@/lib/session-manager'
 
 const TIME_OUT = 100000
 
@@ -249,6 +250,12 @@ const handleStream = (
 const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent }: IOtherOptions) => {
   const options = Object.assign({}, baseOptions, fetchOptions)
 
+  // Phase 7: 익명 사용자 sessionId 헤더 추가
+  const sessionId = getSessionId()
+  if (sessionId) {
+    options.headers.set('X-Session-Id', sessionId)
+  }
+
   const urlPrefix = API_PREFIX
 
   let urlWithPrefix = `${urlPrefix}${url.startsWith('/') ? url : `/${url}`}`
@@ -278,24 +285,19 @@ const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent }: I
     }),
     new Promise((resolve, reject) => {
       globalThis.fetch(urlWithPrefix, options)
-        .then((res: any) => {
+        .then(async (res: any) => {
           const resClone = res.clone()
           // Error handler
           if (!/^(2|3)\d{2}$/.test(res.status)) {
             try {
-              const bodyJson = res.json()
+              const bodyJson = await res.json()
               switch (res.status) {
                 case 401: {
                   Toast.notify({ type: 'error', message: 'Invalid token' })
                   return
                 }
                 default:
-                  // eslint-disable-next-line no-new
-                  new Promise(() => {
-                    bodyJson.then((data: any) => {
-                      Toast.notify({ type: 'error', message: data.message })
-                    })
-                  })
+                  Toast.notify({ type: 'error', message: bodyJson.message || 'Request failed' })
               }
             }
             catch (e) {
@@ -324,9 +326,12 @@ const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent }: I
   ])
 }
 
-export const upload = (fetchOptions: any): Promise<any> => {
+export const upload = (fetchOptions: any, appId?: string): Promise<any> => {
   const urlPrefix = API_PREFIX
-  const urlWithPrefix = `${urlPrefix}/file-upload`
+  // Multi-App 지원: appId가 있으면 앱별 경로, 없으면 기존 경로
+  const urlWithPrefix = appId
+    ? `${urlPrefix}/apps/${appId}/file-upload`
+    : `${urlPrefix}/file-upload`
   const defaultOptions = {
     method: 'POST',
     url: `${urlWithPrefix}`,
@@ -340,6 +345,12 @@ export const upload = (fetchOptions: any): Promise<any> => {
     const xhr = options.xhr
     xhr.open(options.method, options.url)
     for (const key in options.headers) { xhr.setRequestHeader(key, options.headers[key]) }
+
+    // Phase 7: 익명 사용자 sessionId 헤더 추가
+    const sessionId = getSessionId()
+    if (sessionId) {
+      xhr.setRequestHeader('X-Session-Id', sessionId)
+    }
 
     xhr.withCredentials = true
     xhr.onreadystatechange = function () {
@@ -373,6 +384,12 @@ export const ssePost = (
   const options = Object.assign({}, baseOptions, {
     method: 'POST',
   }, fetchOptions)
+
+  // Phase 7: 익명 사용자 sessionId 헤더 추가
+  const sessionId = getSessionId()
+  if (sessionId) {
+    options.headers.set('X-Session-Id', sessionId)
+  }
 
   const urlPrefix = API_PREFIX
   const urlWithPrefix = `${urlPrefix}${url.startsWith('/') ? url : `/${url}`}`

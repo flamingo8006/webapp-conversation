@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsx:*)",
+      "Bash(docker-compose:*)",
+      "Bash(npx prisma generate:*)"
+    ]
+  }
+}

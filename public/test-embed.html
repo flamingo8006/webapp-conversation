@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>임베드 테스트</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .info {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 임베드 테스트 페이지</h1>
+    <div class="info" id="status">
+      초기화 중...
+    </div>
+  </div>
+
+  <!-- 챗봇 iframe (화면배치형) -->
+  <iframe
+    id="chatbot-frame"
+    src=""
+    style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 8px; margin-top: 20px;"
+    frameborder="0"
+    allow="microphone">
+  </iframe>
+
+  <script>
+    async function init() {
+      try {
+        // 1. JWT 토큰 발급
+        const tokenResponse = await fetch('http://localhost:3000/api/auth/embed-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            loginId: 'test_user',
+            empNo: '12345',
+            name: '테스트사용자',
+            role: 'user'
+          })
+        });
+
+        if (!tokenResponse.ok) {
+          throw new Error('토큰 발급 실패');
+        }
+
+        const { token } = await tokenResponse.json();
+        document.getElementById('status').innerHTML = '✅ 토큰 발급 완료<br>토큰: ' + token.substring(0, 50) + '...';
+
+        // 2. 챗봇 목록에서 첫 번째 앱 가져오기
+        // 먼저 로그인
+        const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            loginId: 'admin',
+            password: 'admin123'
+          })
+        });
+
+        if (!loginResponse.ok) {
+          throw new Error('로그인 실패');
+        }
+
+        // 앱 목록 가져오기
+        const appsResponse = await fetch('http://localhost:3000/api/admin/apps', {
+          credentials: 'include'
+        });
+
+        if (!appsResponse.ok) {
+          throw new Error('앱 목록 로드 실패');
+        }
+
+        const apps = await appsResponse.json();
+
+        if (apps.length === 0) {
+          document.getElementById('status').innerHTML = '❌ 챗봇이 없습니다. 관리자 페이지에서 챗봇을 생성하세요.';
+          return;
+        }
+
+        const firstApp = apps[0];
+
+        // 3. iframe에 URL 설정
+        const iframe = document.getElementById('chatbot-frame');
+        iframe.src = `http://localhost:3000/embed/${firstApp.id}?token=${token}`;
+
+        document.getElementById('status').innerHTML =
+          `✅ 챗봇 로드 완료!<br>` +
+          `앱 이름: ${firstApp.name}<br>` +
+          `앱 ID: ${firstApp.id}`;
+
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('status').innerHTML = '❌ 오류: ' + error.message;
+      }
+    }
+
+    // 페이지 로드 시 실행
+    init();
+  </script>
+</body>
+</html>

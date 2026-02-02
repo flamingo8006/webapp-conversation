@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DGIST AI 챗봇 - Embed 샘플</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    p {
+      font-size: 1.2rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    button {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 1rem;
+      margin-bottom: 1rem;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+    }
+    code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+    }
+    #status {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 DGIST AI 챗봇 Embed 샘플</h1>
+    <p>이 페이지는 iframe으로 챗봇을 삽입하는 예제입니다. 오른쪽 하단에 플로팅 버튼이 표시됩니다.</p>
+
+    <div class="card">
+      <h2 style="margin-top: 0;">📋 설정</h2>
+      <p style="font-size: 1rem; margin-bottom: 1rem;">
+        <strong>App ID:</strong> <code id="appIdDisplay">로딩 중...</code>
+      </p>
+      <p style="font-size: 0.9rem; margin-bottom: 0;">
+        iframe이 이미 로드되어 있습니다. 오른쪽 하단 버튼을 클릭하세요.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top: 0;">🎮 컨트롤</h2>
+      <button onclick="openChat()">채팅 열기</button>
+      <button onclick="closeChat()">채팅 닫기</button>
+      <button onclick="toggleChat()">채팅 토글</button>
+      <div id="status"></div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top: 0;">📖 사용 방법</h2>
+      <ol style="font-size: 0.95rem; line-height: 1.8;">
+        <li>관리자 계정으로 로그인하여 챗봇을 생성합니다.</li>
+        <li>챗봇 ID를 확인합니다.</li>
+        <li>아래 코드를 외부 웹사이트에 삽입합니다.</li>
+      </ol>
+      <pre style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>&lt;!-- 챗봇 Embed 코드 --&gt;
+&lt;iframe
+  id="dgist-chatbot"
+  src="http://localhost:3000/embed/YOUR_APP_ID?token=YOUR_JWT_TOKEN"
+  style="position: fixed; bottom: 0; right: 0; width: 100%; height: 100%; border: none; pointer-events: none; z-index: 9999;"
+  allow="clipboard-write"
+&gt;&lt;/iframe&gt;
+
+&lt;script&gt;
+  // 채팅 제어
+  const chatFrame = document.getElementById('dgist-chatbot');
+
+  function openChat() {
+    chatFrame.contentWindow.postMessage({ type: 'OPEN_CHAT' }, '*');
+  }
+
+  function closeChat() {
+    chatFrame.contentWindow.postMessage({ type: 'CLOSE_CHAT' }, '*');
+  }
+&lt;/script&gt;</code></pre>
+    </div>
+  </div>
+
+  <!-- 챗봇 iframe -->
+  <iframe
+    id="dgist-chatbot"
+    src=""
+    style="position: fixed; bottom: 0; right: 0; width: 100%; height: 100%; border: none; pointer-events: none; z-index: 9999;"
+    allow="clipboard-write"
+  ></iframe>
+
+  <script>
+    // 1. JWT 토큰 발급
+    async function getToken() {
+      try {
+        const response = await fetch('http://localhost:3000/api/auth/embed-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            loginId: 'embed_user',
+            empNo: '99999',
+            name: 'Embed 테스트 사용자',
+            role: 'user'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get token');
+        }
+
+        const data = await response.json();
+        return data.token;
+      } catch (error) {
+        console.error('Token error:', error);
+        updateStatus('토큰 발급 실패: ' + error.message);
+        return null;
+      }
+    }
+
+    // 2. 챗봇 목록에서 첫 번째 앱 가져오기
+    async function getFirstApp() {
+      try {
+        // 관리자 계정으로 로그인하여 토큰 획득
+        const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            loginId: 'admin',
+            password: 'admin123'
+          })
+        });
+
+        if (!loginResponse.ok) {
+          throw new Error('Login failed');
+        }
+
+        // 챗봇 목록 가져오기
+        const appsResponse = await fetch('http://localhost:3000/api/admin/apps', {
+          credentials: 'include'
+        });
+
+        if (!appsResponse.ok) {
+          throw new Error('Failed to fetch apps');
+        }
+
+        const apps = await appsResponse.json();
+
+        if (apps.length === 0) {
+          throw new Error('No apps found. Please create a chatbot first.');
+        }
+
+        return apps[0];
+      } catch (error) {
+        console.error('Get app error:', error);
+        updateStatus('챗봇 정보 로드 실패: ' + error.message);
+        return null;
+      }
+    }
+
+    // 3. iframe 초기화
+    async function initEmbed() {
+      updateStatus('초기화 중...');
+
+      const app = await getFirstApp();
+      if (!app) {
+        updateStatus('❌ 챗봇을 찾을 수 없습니다. 관리자 페이지에서 챗봇을 생성하세요.');
+        return;
+      }
+
+      document.getElementById('appIdDisplay').textContent = app.id;
+      updateStatus('앱 로드 완료: ' + app.name);
+
+      const token = await getToken();
+      if (!token) {
+        return;
+      }
+
+      updateStatus('토큰 발급 완료');
+
+      // iframe src 설정
+      const iframe = document.getElementById('dgist-chatbot');
+      iframe.src = `http://localhost:3000/embed/${app.id}?token=${token}`;
+
+      // iframe 로드 완료 후
+      iframe.onload = () => {
+        updateStatus('✅ 챗봇 로드 완료! 오른쪽 하단 버튼을 확인하세요.');
+      };
+    }
+
+    // 채팅 제어 함수
+    function openChat() {
+      const iframe = document.getElementById('dgist-chatbot');
+      iframe.contentWindow.postMessage({ type: 'OPEN_CHAT' }, '*');
+      updateStatus('채팅 열기 명령 전송');
+    }
+
+    function closeChat() {
+      const iframe = document.getElementById('dgist-chatbot');
+      iframe.contentWindow.postMessage({ type: 'CLOSE_CHAT' }, '*');
+      updateStatus('채팅 닫기 명령 전송');
+    }
+
+    function toggleChat() {
+      const iframe = document.getElementById('dgist-chatbot');
+      iframe.contentWindow.postMessage({ type: 'TOGGLE_CHAT' }, '*');
+      updateStatus('채팅 토글 명령 전송');
+    }
+
+    function updateStatus(message) {
+      const status = document.getElementById('status');
+      const timestamp = new Date().toLocaleTimeString();
+      status.innerHTML = `[${timestamp}] ${message}`;
+    }
+
+    // 챗봇으로부터 메시지 수신
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'CHAT_STATUS') {
+        const { isOpen, unreadCount } = event.data.data;
+        updateStatus(`채팅 상태: ${isOpen ? '열림' : '닫힘'}, 읽지 않은 메시지: ${unreadCount}`);
+      }
+    });
+
+    // 페이지 로드 시 초기화
+    initEmbed();
+  </script>
+</body>
+</html>

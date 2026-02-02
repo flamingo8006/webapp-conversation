@@ -51,3 +51,5 @@ yarn.lock
 .serena
 # pmpm
 pnpm-lock.yaml
+
+/app/generated/prisma

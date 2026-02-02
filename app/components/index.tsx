@@ -25,13 +25,16 @@ import { addFileInfos, sortAgentSorts } from '@/utils/tools'
 
 export interface IMainProps {
   params: any
+  appId?: string  // Multi-App 지원: 동적 앱 ID
 }
 
-const Main: FC<IMainProps> = () => {
+const Main: FC<IMainProps> = ({ appId: propAppId }) => {
   const { t } = useTranslation()
   const media = useBreakpoints()
   const isMobile = media === MediaType.mobile
-  const hasSetAppConfig = APP_ID && API_KEY
+  // Multi-App: props로 전달된 appId 우선, 없으면 환경변수 사용
+  const appId = propAppId || APP_ID
+  const hasSetAppConfig = appId && API_KEY
 
   /*
   * app info
@@ -126,7 +129,7 @@ const Main: FC<IMainProps> = () => {
 
     // update chat list of current conversation
     if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding) {
-      fetchChatList(currConversationId).then((res: any) => {
+      fetchChatList(appId, currConversationId).then((res: any) => {
         const { data } = res
         const newChatList: ChatItem[] = generateNewChatListWithOpenStatement(notSyncToStateIntroduction, notSyncToStateInputs)
 
@@ -164,7 +167,7 @@ const Main: FC<IMainProps> = () => {
       setConversationIdChangeBecauseOfNew(false)
     }
     // trigger handleConversationSwitch
-    setCurrConversationId(id, APP_ID)
+    setCurrConversationId(id, appId)
     hideSidebar()
   }
 
@@ -228,7 +231,7 @@ const Main: FC<IMainProps> = () => {
     }
     (async () => {
       try {
-        const [conversationData, appParams] = await Promise.all([fetchConversations(), fetchAppParams()])
+        const [conversationData, appParams] = await Promise.all([fetchConversations(appId), fetchAppParams(appId)])
         // handle current conversation id
         const { data: conversations, error } = conversationData as { data: ConversationItem[], error: string }
         if (error) {
@@ -236,7 +239,7 @@ const Main: FC<IMainProps> = () => {
           throw new Error(error)
           return
         }
-        const _conversationId = getConversationIdFromStorage(APP_ID)
+        const _conversationId = getConversationIdFromStorage(appId)
         const currentConversation = conversations.find(item => item.id === _conversationId)
         const isNotNewConversation = !!currentConversation
 
@@ -276,7 +279,7 @@ const Main: FC<IMainProps> = () => {
         })
         setConversationList(conversations as ConversationItem[])
 
-        if (isNotNewConversation) { setCurrConversationId(_conversationId, APP_ID, false) }
+        if (isNotNewConversation) { setCurrConversationId(_conversationId, appId, false) }
 
         setInited(true)
       }
@@ -424,7 +427,7 @@ const Main: FC<IMainProps> = () => {
     let tempNewConversationId = ''
 
     setRespondingTrue()
-    sendChatMessage(data, {
+    sendChatMessage(appId, data, {
       getAbortController: (abortController) => {
         setAbortController(abortController)
       },
@@ -460,8 +463,8 @@ const Main: FC<IMainProps> = () => {
         if (hasError) { return }
 
         if (getConversationIdChangeBecauseOfNew()) {
-          const { data: allConversations }: any = await fetchConversations()
-          const newItem: any = await generationConversationName(allConversations[0].id)
+          const { data: allConversations }: any = await fetchConversations(appId)
+          const newItem: any = await generationConversationName(appId, allConversations[0].id)
 
           const newAllConversations = produce(allConversations, (draft: any) => {
             draft[0].name = newItem.name
@@ -471,7 +474,7 @@ const Main: FC<IMainProps> = () => {
         setConversationIdChangeBecauseOfNew(false)
         resetNewConversationInputs()
         setChatNotStarted()
-        setCurrConversationId(tempNewConversationId, APP_ID, true)
+        setCurrConversationId(tempNewConversationId, appId, true)
         setRespondingFalse()
       },
       onFile(file) {
@@ -635,7 +638,7 @@ const Main: FC<IMainProps> = () => {
   }
 
   const renderSidebar = () => {
-    if (!APP_ID || !APP_INFO || !promptConfig) { return null }
+    if (!appId || !APP_INFO || !promptConfig) { return null }
     return (
       <Sidebar
         list={conversationList}
@@ -646,9 +649,9 @@ const Main: FC<IMainProps> = () => {
     )
   }
 
-  if (appUnavailable) { return <AppUnavailable isUnknownReason={isUnknownReason} errMessage={!hasSetAppConfig ? 'Please set APP_ID and API_KEY in config/index.tsx' : ''} /> }
+  if (appUnavailable) { return <AppUnavailable isUnknownReason={isUnknownReason} errMessage={!hasSetAppConfig ? 'Please set appId or configure environment variables' : ''} /> }
 
-  if (!APP_ID || !APP_INFO || !promptConfig) { return <Loading type='app' /> }
+  if (!appId || !APP_INFO || !promptConfig) { return <Loading type='app' /> }
 
   return (
     <div className='bg-gray-100'>
