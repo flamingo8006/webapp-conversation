@@ -1,7 +1,10 @@
 'use client'
 
+import Link from 'next/link'
+import { LogOut, Settings, Loader2 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { AppList } from '@/app/components/portal/app-list'
+import { Button } from '@/components/ui/button'
 
 export default function PortalPage() {
   const { user, loading } = useAuth()
@@ -10,57 +13,55 @@ export default function PortalPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-500">로딩 중...</div>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* 헤더 */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-card border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-foreground">
                 DGIST AI 챗봇 포털
               </h1>
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-muted-foreground">
                 원하는 챗봇을 선택하여 대화를 시작하세요
               </p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-3">
               {user ? (
                 <>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                    <p className="text-xs text-gray-500">{user.loginId}</p>
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">{user.loginId}</p>
                   </div>
                   {user.role === 'admin' && (
-                    <a
-                      href="/admin"
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                    >
-                      관리자
-                    </a>
+                    <Button asChild>
+                      <Link href="/admin">
+                        <Settings className="mr-2 h-4 w-4" />
+                        관리자
+                      </Link>
+                    </Button>
                   )}
-                  <button
+                  <Button
+                    variant="outline"
                     onClick={async () => {
                       await fetch('/api/auth/logout', { method: 'POST' })
                       window.location.href = '/login'
                     }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                   >
+                    <LogOut className="mr-2 h-4 w-4" />
                     로그아웃
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <a
-                  href="/login"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                >
-                  로그인
-                </a>
+                <Button asChild>
+                  <Link href="/login">로그인</Link>
+                </Button>
               )}
             </div>
           </div>

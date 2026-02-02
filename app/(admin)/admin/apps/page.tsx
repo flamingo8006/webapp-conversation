@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Plus, Loader2 } from 'lucide-react'
 import { AppTable } from '@/app/components/admin/app-table'
 import Toast from '@/app/components/base/toast'
 import type { AppConfig } from '@/hooks/use-app'
+import { Button } from '@/components/ui/button'
 
 export default function AppsListPage() {
   const [apps, setApps] = useState<AppConfig[]>([])
@@ -44,7 +46,7 @@ export default function AppsListPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-500">로딩 중...</div>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -54,18 +56,17 @@ export default function AppsListPage() {
       {/* 헤더 */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">챗봇 관리</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold">챗봇 관리</h1>
+          <p className="mt-2 text-muted-foreground">
             등록된 챗봇을 관리하고 새로운 챗봇을 추가할 수 있습니다
           </p>
         </div>
-        <Link
-          href="/admin/apps/new"
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <span className="mr-2">➕</span>
-          새 챗봇 추가
-        </Link>
+        <Button asChild>
+          <Link href="/admin/apps/new">
+            <Plus className="mr-2 h-4 w-4" />
+            새 챗봇 추가
+          </Link>
+        </Button>
       </div>
 
       {/* 테이블 */}

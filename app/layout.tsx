@@ -1,5 +1,6 @@
 import { getLocaleOnServer } from '@/i18n/server'
 import { Providers } from '@/app/components/providers'
+import { Toaster } from '@/components/ui/toaster'
 
 import './styles/globals.css'
 import './styles/markdown.scss'
@@ -19,6 +20,7 @@ const LocaleLayout = async ({
               {children}
             </div>
           </div>
+          <Toaster />
         </Providers>
       </body>
     </html>

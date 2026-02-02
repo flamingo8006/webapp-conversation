@@ -2,8 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { AlertCircle, Loader2 } from 'lucide-react'
 import Toast from '@/app/components/base/toast'
 import { useAuth } from '@/app/components/providers/auth-provider'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -54,78 +60,62 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-white shadow-lg rounded-lg px-8 py-10">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            DGIST AI 챗봇
-          </h1>
-          <p className="text-gray-600">로그인하여 계속하기</p>
-        </div>
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">DGIST AI 챗봇</CardTitle>
+          <CardDescription>로그인하여 계속하기</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
+            <div className="space-y-2">
+              <Label htmlFor="loginId">로그인 ID</Label>
+              <Input
+                id="loginId"
+                type="text"
+                value={loginId}
+                onChange={e => setLoginId(e.target.value)}
+                placeholder="loginId를 입력하세요"
+                required
+                disabled={loading}
+              />
             </div>
-          )}
 
-          <div>
-            <label
-              htmlFor="loginId"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              로그인 ID
-            </label>
-            <input
-              id="loginId"
-              type="text"
-              value={loginId}
-              onChange={e => setLoginId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="loginId를 입력하세요"
-              required
-              disabled={loading}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">비밀번호</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="비밀번호를 입력하세요"
+                required
+                disabled={loading}
+              />
+            </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              비밀번호
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="비밀번호를 입력하세요"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={loading}
-          >
-            {loading ? '로그인 중...' : '로그인'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? '로그인 중...' : '로그인'}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex flex-col text-center text-sm text-muted-foreground">
           <p>테스트 계정:</p>
           <p className="mt-1">
-            관리자: <code className="bg-gray-100 px-2 py-1 rounded">admin / admin123</code>
+            관리자: <code className="bg-muted px-2 py-1 rounded text-foreground">admin / admin123</code>
           </p>
           <p className="mt-1">
-            사용자: <code className="bg-gray-100 px-2 py-1 rounded">user / user123</code>
+            사용자: <code className="bg-muted px-2 py-1 rounded text-foreground">user / user123</code>
           </p>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

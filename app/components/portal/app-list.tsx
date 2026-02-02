@@ -1,9 +1,32 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { MessageSquare } from 'lucide-react'
 import { AppCard } from './app-card'
 import type { AppConfig } from '@/hooks/use-app'
 import Toast from '@/app/components/base/toast'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Card, CardContent } from '@/components/ui/card'
+
+function AppCardSkeleton() {
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-start space-x-4">
+          <Skeleton className="w-16 h-16 rounded-lg" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t">
+          <Skeleton className="h-4 w-20" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export function AppList() {
   const [apps, setApps] = useState<AppConfig[]>([])
@@ -39,8 +62,10 @@ export function AppList() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-500">로딩 중...</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <AppCardSkeleton />
+        <AppCardSkeleton />
+        <AppCardSkeleton />
       </div>
     )
   }
@@ -48,25 +73,13 @@ export function AppList() {
   if (apps.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <div className="text-gray-400 mb-4">
-          <svg
-            className="w-16 h-16 mx-auto"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
+        <div className="text-muted-foreground mb-4">
+          <MessageSquare className="w-16 h-16 mx-auto" strokeWidth={1.5} />
         </div>
-        <p className="text-gray-600 text-lg font-medium mb-2">
+        <p className="text-foreground text-lg font-medium mb-2">
           사용 가능한 챗봇이 없습니다
         </p>
-        <p className="text-gray-500 text-sm">
+        <p className="text-muted-foreground text-sm">
           관리자에게 문의하여 챗봇을 추가해주세요.
         </p>
       </div>
