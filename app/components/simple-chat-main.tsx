@@ -22,15 +22,17 @@ import { API_KEY, APP_ID, APP_INFO, promptTemplate } from '@/config'
 import type { Annotation as AnnotationType } from '@/types/log'
 import { addFileInfos, sortAgentSorts } from '@/utils/tools'
 import { useSession } from '@/hooks/use-session'
+import { useApp } from '@/hooks/use-app'
+import LanguageSwitcher from '@/app/components/language-switcher'
 
 export interface ISimpleChatMainProps {
   params: any
   appId?: string
-  appName?: string  // 챗봇 이름 (상단 헤더 표시용)
+  appName?: string  // 챗봇 이름 (상단 헤더 표시용) - 폴백용
 }
 
 const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const media = useBreakpoints()
   const isMobile = media === MediaType.mobile
   const appId = propAppId || APP_ID
@@ -38,6 +40,9 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
 
   // Phase 7: 익명 사용자 세션 관리
   const { sessionId, isReady: isSessionReady } = useSession()
+
+  // Phase 8a-2: 다국어 앱 이름 지원
+  const { app } = useApp()
 
   /*
   * app info
@@ -53,7 +58,17 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
     transfer_methods: [TransferMethod.local_file],
   })
   const [fileConfig, setFileConfig] = useState<FileUpload | undefined>()
-  const [displayAppName, setDisplayAppName] = useState<string>(appName || APP_INFO?.title || '')
+
+  // Phase 8a-2: 현재 언어에 맞는 앱 이름 표시
+  const currentLang = i18n.language
+  const displayAppName = React.useMemo(() => {
+    if (app) {
+      return currentLang === 'ko'
+        ? (app.nameKo || app.name)
+        : (app.nameEn || app.nameKo || app.name)
+    }
+    return appName || APP_INFO?.title || ''
+  }, [app, currentLang, appName])
 
   useEffect(() => {
     // DGIST AI로 변경
@@ -148,6 +163,8 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
             feedback: item.feedback,
             isAnswer: true,
             message_files: item.message_files?.filter((file: any) => file.belongs_to === 'assistant') || [],
+            // Dify API 응답에 retriever_resources가 있으면 citation으로 매핑
+            citation: item.retriever_resources || item.metadata?.retriever_resources,
           })
         })
         setChatList(newChatList)
@@ -215,7 +232,8 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
         const isNotNewConversation = !!currentConversation
 
         const { user_input_form, opening_statement: introduction, file_upload, system_parameters, suggested_questions = [] }: any = appParams
-        setLocaleOnClient(APP_INFO.default_language, true)
+        // Phase 8a: 사용자 언어 설정 우선, 앱 기본 언어로 덮어쓰지 않음
+        // setLocaleOnClient(APP_INFO.default_language, true)
         setNewConversationInfo({
           name: t('app.chat.newChatDefaultName'),
           introduction,
@@ -447,9 +465,11 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
             // 오류가 발생해도 계속 진행
           }
         }
-        setConversationIdChangeBecauseOfNew(false)
         resetNewConversationInputs()
         setCurrConversationId(tempNewConversationId, appId, true)
+        // conversationIdChangeBecauseOfNew를 마지막에 설정하여
+        // handleConversationSwitch에서 fetchChatList 호출 방지 (citation 유실 방지)
+        setTimeout(() => setConversationIdChangeBecauseOfNew(false), 100)
         setRespondingFalse()
       },
       onFile(file) {
@@ -497,6 +517,11 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
         })
       },
       onMessageEnd: (messageEnd) => {
+        // Citation/Reference 데이터 처리
+        if (messageEnd.metadata?.retriever_resources) {
+          responseItem.citation = messageEnd.metadata.retriever_resources
+        }
+
         if (messageEnd.metadata?.annotation_reply) {
           responseItem.id = messageEnd.id
           responseItem.annotation = ({
@@ -542,7 +567,7 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
         setChatList(produce(getChatList(), (draft) => {
           const answerIndex = draft.findIndex(item => item.id === placeholderAnswerId)
           if (answerIndex !== -1) {
-            draft[answerIndex].content = errorMessage || '오류가 발생했습니다.'
+            draft[answerIndex].content = errorMessage || t('app.chat.error')
             draft[answerIndex].isError = true
           }
         }))
@@ -622,8 +647,14 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
       {/* 헤더 - 고정 */}
       <header className="absolute top-0 left-0 right-0 z-30 bg-background/80 backdrop-blur-md border-b shadow-sm">
         <div className="w-full px-3 sm:px-4 md:px-6">
-          <div className="flex items-center justify-center h-14 sm:h-16">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            {/* 왼쪽: 언어 선택 */}
+            <div className="w-20 sm:w-24">
+              <LanguageSwitcher variant="compact" />
+            </div>
+
+            {/* 중앙: 앱 이름 */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 justify-center">
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
                 <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
@@ -631,6 +662,9 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
                 {displayAppName}
               </h1>
             </div>
+
+            {/* 오른쪽: 균형을 위한 빈 공간 */}
+            <div className="w-20 sm:w-24" />
           </div>
         </div>
       </header>
@@ -661,7 +695,7 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
                 <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center flex-shrink-0">
                   <span className="text-white text-[7px] sm:text-[8px] font-bold">D</span>
                 </div>
-                <span className="whitespace-nowrap">Powered by <span className="font-semibold text-foreground">DGIST AI</span></span>
+                <span className="whitespace-nowrap">{t('app.portal.poweredBy')}</span>
               </div>
             </div>
           </Card>

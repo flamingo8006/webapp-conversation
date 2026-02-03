@@ -53,7 +53,7 @@ export function EmbedCodeModal({ app, isOpen, onClose }: EmbedCodeModalProps) {
     cursor: pointer;
     box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
     z-index: 9998;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.3s, box-shadow 0.3s;
   }
   #dgist-chatbot-btn:hover {
     transform: scale(1.1);
@@ -63,37 +63,172 @@ export function EmbedCodeModal({ app, isOpen, onClose }: EmbedCodeModalProps) {
     width: 28px;
     height: 28px;
     color: white;
+    transition: transform 0.3s, opacity 0.2s;
   }
-  #dgist-chatbot-iframe {
+  #dgist-chatbot-btn .icon-chat,
+  #dgist-chatbot-btn .icon-close {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  #dgist-chatbot-btn .icon-close {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+  #dgist-chatbot-btn.active .icon-chat {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-90deg);
+  }
+  #dgist-chatbot-btn.active .icon-close {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  #dgist-chatbot-container {
     position: fixed;
     bottom: 90px;
     right: 20px;
-    width: 400px;
-    height: 600px;
-    border: none;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  #dgist-chatbot-container.open {
+    pointer-events: auto;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  #dgist-chatbot-container.closing {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  #dgist-chatbot-wrapper {
+    position: relative;
+    background: white;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    z-index: 9999;
-    display: none;
+    overflow: hidden;
   }
-  #dgist-chatbot-iframe.open {
+  #dgist-chatbot-iframe {
+    border: none;
     display: block;
+  }
+  #dgist-chatbot-resize {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nw-resize;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #dgist-chatbot-resize:hover svg {
+    fill: #3b82f6;
+  }
+  #dgist-chatbot-resize svg {
+    width: 12px;
+    height: 12px;
+    fill: #9ca3af;
+    transition: fill 0.2s;
   }
 </style>
 
 <button id="dgist-chatbot-btn" onclick="toggleChatbot()">
-  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg class="icon-chat" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+  </svg>
+  <svg class="icon-close" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
   </svg>
 </button>
 
-<iframe id="dgist-chatbot-iframe" src="${baseUrl}/simple-chat/${app?.id}"></iframe>
+<div id="dgist-chatbot-container">
+  <div id="dgist-chatbot-wrapper">
+    <div id="dgist-chatbot-resize" title="드래그하여 크기 조절">
+      <svg viewBox="0 0 16 16"><path d="M2 2h4v2H4v2H2V2zm0 6h2v2h2v2H2V8z"/></svg>
+    </div>
+    <iframe id="dgist-chatbot-iframe" src="${baseUrl}/simple-chat/${app?.id}"></iframe>
+  </div>
+</div>
 
 <script>
-  function toggleChatbot() {
+  (function() {
+    var container = document.getElementById('dgist-chatbot-container');
+    var wrapper = document.getElementById('dgist-chatbot-wrapper');
     var iframe = document.getElementById('dgist-chatbot-iframe');
-    iframe.classList.toggle('open');
-  }
+    var btn = document.getElementById('dgist-chatbot-btn');
+    var resizeHandle = document.getElementById('dgist-chatbot-resize');
+    var STORAGE_KEY = 'dgist-chatbot-size';
+    var MIN_W = 320, MIN_H = 400, MAX_W = 800, MAX_H = 900;
+    var size = { width: 400, height: 600 };
+    var isResizing = false, startX, startY, startW, startH;
+    var isOpen = false;
+
+    // 저장된 크기 불러오기
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        size.width = Math.min(Math.max(parsed.width || 400, MIN_W), MAX_W);
+        size.height = Math.min(Math.max(parsed.height || 600, MIN_H), MAX_H);
+      }
+    } catch(e) {}
+
+    function applySize() {
+      wrapper.style.width = size.width + 'px';
+      wrapper.style.height = size.height + 'px';
+      iframe.style.width = size.width + 'px';
+      iframe.style.height = size.height + 'px';
+    }
+    applySize();
+
+    resizeHandle.addEventListener('mousedown', function(e) {
+      isResizing = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startW = size.width;
+      startH = size.height;
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isResizing) return;
+      var dx = startX - e.clientX;
+      var dy = startY - e.clientY;
+      size.width = Math.min(Math.max(startW + dx, MIN_W), MAX_W);
+      size.height = Math.min(Math.max(startH + dy, MIN_H), MAX_H);
+      applySize();
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (isResizing) {
+        isResizing = false;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(size)); } catch(e) {}
+      }
+    });
+
+    window.toggleChatbot = function() {
+      if (isOpen) {
+        // 닫기 애니메이션
+        container.classList.add('closing');
+        container.classList.remove('open');
+        btn.classList.remove('active');
+        setTimeout(function() {
+          container.classList.remove('closing');
+        }, 300);
+      } else {
+        // 열기 애니메이션
+        container.classList.add('open');
+        btn.classList.add('active');
+      }
+      isOpen = !isOpen;
+    };
+  })();
 </script>`
 
   // 인증 필요 챗봇용 코드 (토큰 필요)

@@ -33,9 +33,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Phase 7: 공개 챗봇 경로 처리 (/simple-chat/[appId], /api/apps/[appId]/*)
-  // Edge Runtime에서 DB 조회 불가하므로, 일단 통과시키고 API 라우트에서 권한 체크
-  if (pathname.startsWith('/simple-chat/') || pathname.startsWith('/api/apps/')) {
+  // Phase 7: 공개 챗봇 경로 처리 (/simple-chat/[appId], /chat/[appId], /api/apps/[appId]/*)
+  // Edge Runtime에서 DB 조회 불가하므로, 일단 통과시키고 API 라우트/페이지에서 권한 체크
+  if (pathname.startsWith('/simple-chat/') || pathname.startsWith('/chat/') || pathname.startsWith('/api/apps/')) {
     // sessionId 또는 JWT 확인
     const sessionId = request.headers.get('x-session-id')
     let token = request.cookies.get('auth_token')?.value

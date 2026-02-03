@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { AppConfig } from '@/hooks/use-app'
 import { ChatTypeModal } from './chat-type-modal'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,7 +13,19 @@ interface AppCardProps {
 }
 
 export function AppCard({ app }: AppCardProps) {
+  const { t, i18n } = useTranslation()
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  // Phase 8a-2: 현재 언어에 맞는 이름/설명 표시
+  const currentLang = i18n.language
+
+  const displayName = currentLang === 'ko'
+    ? (app.nameKo || app.name)
+    : (app.nameEn || app.nameKo || app.name)
+
+  const displayDesc = currentLang === 'ko'
+    ? (app.descriptionKo || app.description)
+    : (app.descriptionEn || app.descriptionKo || app.description)
 
   const handleClick = () => {
     setIsModalOpen(true)
@@ -30,12 +43,12 @@ export function AppCard({ app }: AppCardProps) {
             {app.iconUrl ? (
               <img
                 src={app.iconUrl}
-                alt={app.name}
+                alt={displayName}
                 className="w-16 h-16 rounded-lg object-cover"
               />
             ) : (
               <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                {app.name.charAt(0).toUpperCase()}
+                {displayName.charAt(0).toUpperCase()}
               </div>
             )}
           </div>
@@ -43,11 +56,11 @@ export function AppCard({ app }: AppCardProps) {
           {/* 내용 */}
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold text-foreground mb-2 truncate">
-              {app.name}
+              {displayName}
             </h3>
-            {app.description && (
+            {displayDesc && (
               <p className="text-sm text-muted-foreground line-clamp-2">
-                {app.description}
+                {displayDesc}
               </p>
             )}
           </div>
@@ -63,7 +76,7 @@ export function AppCard({ app }: AppCardProps) {
               handleClick()
             }}
           >
-            채팅 시작
+            {t('app.portal.startChat')}
             <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
         </div>

@@ -10,7 +10,9 @@
     "fix": "eslint . --fix",
     "eslint-fix": "eslint . --fix",
     "lint-staged": "lint-staged",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@floating-ui/react": "^0.26.25",
@@ -21,6 +23,7 @@
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
     "@monaco-editor/react": "^4.6.0",
+    "@playwright/test": "^1.58.1",
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -45,7 +48,6 @@
     "clsx": "^2.1.1",
     "copy-to-clipboard": "^3.3.3",
     "dify-client": "^2.3.1",
-    "eslint-config-next": "~14.2.32",
     "eventsource-parser": "^1.0.0",
     "husky": "^9.1.7",
     "i18next": "^23.16.4",

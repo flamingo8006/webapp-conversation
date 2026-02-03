@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 
 interface AppFormProps {
@@ -24,6 +24,11 @@ export function AppForm({ app, mode }: AppFormProps) {
   const [formData, setFormData] = useState({
     name: app?.name || '',
     description: app?.description || '',
+    // 다국어 필드 (Phase 8a-2)
+    nameKo: app?.nameKo || '',
+    nameEn: app?.nameEn || '',
+    descriptionKo: app?.descriptionKo || '',
+    descriptionEn: app?.descriptionEn || '',
     difyAppId: app?.difyAppId || '',
     apiKey: '',
     apiUrl: app?.apiUrl || 'https://api.dify.ai/v1',
@@ -107,9 +112,10 @@ export function AppForm({ app, mode }: AppFormProps) {
           <div>
             <h3 className="text-lg font-medium mb-4">기본 정보</h3>
             <div className="space-y-4">
+              {/* 레거시 이름 (내부용) */}
               <div className="space-y-2">
                 <Label htmlFor="name">
-                  챗봇 이름 <span className="text-destructive">*</span>
+                  시스템 이름 <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -117,20 +123,74 @@ export function AppForm({ app, mode }: AppFormProps) {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="예: 고객 지원 챗봇"
+                  placeholder="예: customer-support-bot"
                 />
+                <p className="text-xs text-muted-foreground">
+                  내부 관리용 이름입니다. 사용자에게는 표시되지 않습니다.
+                </p>
               </div>
 
+              {/* 다국어 이름 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nameKo">한글 이름</Label>
+                  <Input
+                    id="nameKo"
+                    name="nameKo"
+                    value={formData.nameKo}
+                    onChange={handleChange}
+                    placeholder="예: 고객 지원 챗봇"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nameEn">영어 이름</Label>
+                  <Input
+                    id="nameEn"
+                    name="nameEn"
+                    value={formData.nameEn}
+                    onChange={handleChange}
+                    placeholder="예: Customer Support Bot"
+                  />
+                </div>
+              </div>
+
+              {/* 레거시 설명 */}
               <div className="space-y-2">
-                <Label htmlFor="description">설명</Label>
+                <Label htmlFor="description">시스템 설명</Label>
                 <Textarea
                   id="description"
                   name="description"
-                  rows={3}
+                  rows={2}
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="챗봇에 대한 설명을 입력하세요"
+                  placeholder="내부 관리용 설명 (선택사항)"
                 />
+              </div>
+
+              {/* 다국어 설명 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="descriptionKo">한글 설명</Label>
+                  <Textarea
+                    id="descriptionKo"
+                    name="descriptionKo"
+                    rows={3}
+                    value={formData.descriptionKo}
+                    onChange={handleChange}
+                    placeholder="챗봇에 대한 한글 설명을 입력하세요"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="descriptionEn">영어 설명</Label>
+                  <Textarea
+                    id="descriptionEn"
+                    name="descriptionEn"
+                    rows={3}
+                    value={formData.descriptionEn}
+                    onChange={handleChange}
+                    placeholder="Enter description in English"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -224,7 +284,7 @@ export function AppForm({ app, mode }: AppFormProps) {
                 <Checkbox
                   id="isActive"
                   checked={formData.isActive}
-                  onCheckedChange={(checked) => handleCheckboxChange('isActive', checked as boolean)}
+                  onCheckedChange={checked => handleCheckboxChange('isActive', checked as boolean)}
                 />
                 <Label htmlFor="isActive" className="cursor-pointer">
                   활성화
@@ -245,7 +305,7 @@ export function AppForm({ app, mode }: AppFormProps) {
                   <Checkbox
                     id="isPublic"
                     checked={formData.isPublic}
-                    onCheckedChange={(checked) => handleCheckboxChange('isPublic', checked as boolean)}
+                    onCheckedChange={checked => handleCheckboxChange('isPublic', checked as boolean)}
                   />
                   <Label htmlFor="isPublic" className="cursor-pointer">
                     포털에 노출
@@ -265,7 +325,7 @@ export function AppForm({ app, mode }: AppFormProps) {
                         <Checkbox
                           id="requireAuth"
                           checked={formData.requireAuth}
-                          onCheckedChange={(checked) => handleCheckboxChange('requireAuth', checked as boolean)}
+                          onCheckedChange={checked => handleCheckboxChange('requireAuth', checked as boolean)}
                         />
                         <Label htmlFor="requireAuth" className="cursor-pointer">
                           로그인 필수
@@ -284,7 +344,7 @@ export function AppForm({ app, mode }: AppFormProps) {
                             <Checkbox
                               id="allowAnonymous"
                               checked={formData.allowAnonymous}
-                              onCheckedChange={(checked) => handleCheckboxChange('allowAnonymous', checked as boolean)}
+                              onCheckedChange={checked => handleCheckboxChange('allowAnonymous', checked as boolean)}
                             />
                             <Label htmlFor="allowAnonymous" className="cursor-pointer">
                               익명 사용자 허용

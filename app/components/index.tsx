@@ -148,6 +148,8 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
             feedback: item.feedback,
             isAnswer: true,
             message_files: item.message_files?.filter((file: any) => file.belongs_to === 'assistant') || [],
+            // Dify API 응답에 retriever_resources가 있으면 citation으로 매핑
+            citation: item.retriever_resources || item.metadata?.retriever_resources,
           })
         })
         setChatList(newChatList)
@@ -245,7 +247,8 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
 
         // fetch new conversation info
         const { user_input_form, opening_statement: introduction, file_upload, system_parameters, suggested_questions = [] }: any = appParams
-        setLocaleOnClient(APP_INFO.default_language, true)
+        // Phase 8a: 사용자 언어 설정 우선, 앱 기본 언어로 덮어쓰지 않음
+        // setLocaleOnClient(APP_INFO.default_language, true)
         setNewConversationInfo({
           name: t('app.chat.newChatDefaultName'),
           introduction,
@@ -471,10 +474,12 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
           })
           setConversationList(newAllConversations as any)
         }
-        setConversationIdChangeBecauseOfNew(false)
         resetNewConversationInputs()
         setChatNotStarted()
         setCurrConversationId(tempNewConversationId, appId, true)
+        // conversationIdChangeBecauseOfNew를 마지막에 설정하여
+        // handleConversationSwitch에서 fetchChatList 호출 방지 (citation 유실 방지)
+        setTimeout(() => setConversationIdChangeBecauseOfNew(false), 100)
         setRespondingFalse()
       },
       onFile(file) {
@@ -544,8 +549,10 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
           setChatList(newListWithAnswer)
           return
         }
-        // not support show citation
-        // responseItem.citation = messageEnd.retriever_resources
+        // Citation/Reference 데이터 처리
+        if (messageEnd.metadata?.retriever_resources) {
+          responseItem.citation = messageEnd.metadata.retriever_resources
+        }
         const newListWithAnswer = produce(
           getChatList().filter(item => item.id !== responseItem.id && item.id !== placeholderAnswerId),
           (draft) => {

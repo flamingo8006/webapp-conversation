@@ -51,24 +51,65 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 - [x] 관리자 UI 공개 설정 섹션
 - [x] 공개 챗봇 목록 API
 
+### Phase 8a: 채팅 기능 강화 ✅
+- [x] 다국어 지원 (한글/영어 + OS 언어 감지)
+  - 한글 번역 파일 생성 (`app.ko.ts`, `common.ko.ts`, `tools.ko.ts`)
+  - i18n 설정에 한글 추가 및 localStorage 저장
+  - 하드코딩된 문자열 → t() 함수 대체
+  - 언어 선택 UI 컴포넌트 (헤더에 통합)
+- [x] 답변 레퍼런스(출처) 표시
+  - Citation UI 컴포넌트 생성
+  - Answer 컴포넌트에 통합
+  - retriever_resources 데이터 처리 활성화
+- [x] 멀티모달 - 익명 사용자 파일 업로드 지원
+  - file-upload 라우트에 익명 사용자 처리 추가
+- [x] JWT 임베드 테스트 스크립트 생성
+  - `scripts/generate-embed-token.ts`
+
+### Phase 8a 보완: 다국어 기능 강화 ✅
+- [x] 포털 메인 화면 다국어 지원
+  - 번역 키 추가 (`portal.title`, `portal.subtitle`, 등)
+  - 하드코딩된 한글 문자열 → t() 함수로 변경
+  - 언어 선택 버튼 헤더에 추가
+  - 브라우저 탭 제목(title) 다국어 지원
+- [x] 챗봇 이름/설명 다국어 지원
+  - DB 스키마에 nameKo, nameEn, descriptionKo, descriptionEn 필드 추가
+  - Repository/API에 다국어 필드 처리 추가
+  - 관리자 콘솔에서 한글/영어 입력 UI 추가 (병렬 배치)
+  - 포털 화면에서 현재 언어에 맞는 이름/설명 표시
+  - 기존 데이터 마이그레이션 (name → nameKo, description → descriptionKo)
+
 ---
 
 ## 🔄 현재 진행 중인 작업
 
-**상태**: Phase 7 테스트 완료
+**상태**: Phase 8a 보완 테스트 완료
 
-**최근 해결한 이슈**:
-- ✅ Edge Runtime crypto 모듈 호환성 문제 해결
-- ✅ `crypto.randomUUID()` 폴백 함수 추가
-- ✅ 공개 API 엔드포인트 추가 (`/api/apps/public`, `/api/apps/[appId]/info`)
-- ✅ 메인 페이지 익명 접근 허용
-- ✅ 익명 사용자 "Invalid token" 오류 수정 (`getOrCreateSessionId` 사용)
-- ✅ Middleware publicPaths 버그 수정 (prefix/exact 분리)
-- ✅ 로그인 후 상태 즉시 반영 (`refreshUser` 호출)
-- ✅ 메시지 제한 에러 채팅창 표시 기능
+**최근 완료한 작업** (2026-02-03):
+- ✅ 포털 메인 화면 다국어 지원 (번역 키 추가, 언어 선택 버튼)
+- ✅ 챗봇 이름/설명 다국어 지원 (DB 스키마, Repository, API, UI)
+- ✅ 기존 데이터 마이그레이션 완료
+- ✅ 심플형 채팅 화면 다국어 앱 이름 표시 버그 수정
 
 **알려진 버그**:
 - Windows에서 Next.js standalone 빌드 시 symlink 권한 오류 (개발 모드는 정상 동작)
+
+---
+
+## ✅ Phase 8a 다국어 테스트 결과 (2026-02-03)
+
+| 테스트 항목 | 결과 | 비고 |
+|------------|------|------|
+| 1. 포털 제목/부제목 다국어 | ✅ 통과 | 한/영 전환 시 텍스트 변경 확인 |
+| 2. 버튼 텍스트 다국어 | ✅ 통과 | 관리자, 로그아웃, 로그인, 채팅 시작 |
+| 3. 브라우저 탭 제목 | ✅ 통과 | 언어 전환 시 title 변경 |
+| 4. 관리자 폼 다국어 UI | ✅ 통과 | 한글/영어 이름, 설명 필드 병렬 배치 |
+| 5. 챗봇 생성/수정 | ✅ 통과 | 다국어 필드 입력 및 저장 |
+| 6. 포털 챗봇 이름 (한국어) | ✅ 통과 | nameKo 표시 |
+| 7. 포털 챗봇 이름 (영어) | ✅ 통과 | nameEn 표시 (없으면 nameKo 폴백) |
+| 8. 심플형 채팅 앱 이름 | ✅ 통과 | 언어 전환 시 동적 변경 |
+| 9. 심플형 채팅 플레이스홀더 | ✅ 통과 | 한/영 전환 확인 |
+| 10. 심플형 채팅 환영 메시지 | ✅ 통과 | 한/영 전환 확인 |
 
 ---
 
@@ -86,21 +127,31 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 
 ## 📌 다음에 해야 할 작업 (우선순위)
 
-### 우선순위 1: 레거시 인증 연동 후 테스트 (보류)
-- [ ] **인증형 임베드 테스트** - JWT 토큰 기반 임베드 (`/embed/[appId]?token=...`)
-- [ ] 레거시 인증 시스템 연동 테스트
-- [ ] embed-token API 테스트
+### 우선순위 1: Phase 8b - 관리 인프라
+- [ ] 사용자/그룹 관리 (User, Department, UserRole 추가)
+- [ ] 감사 로그 (AuditLog)
+- [ ] 사용 통계 대시보드 (UsageStats)
+- [ ] 에러 모니터링 (ErrorLog)
 
-### 우선순위 2: 프로덕션 준비
+### 우선순위 2: Phase 8c - 디자인 명세 대기
+- [ ] 앱형 UI 변경 (디자인 명세 제공 후)
+
+### 우선순위 3: 기능 검토
+- [ ] **앱형 익명 사용자 사용 여부 검토**
+  - 앱형은 대화 히스토리가 계속 기록됨
+  - 익명 사용자에게 앱형 허용 시 보안/관리 이슈 검토 필요
+  - 심플형만 익명 허용 또는 앱형도 허용할지 결정
+
+### 우선순위 4: 프로덕션 준비
 - [ ] E2E 테스트 작성
 - [ ] 보안 검토
 - [ ] 성능 최적화
 - [ ] 에러 핸들링 강화
 - [ ] 로깅 시스템
 
-### 우선순위 3: 추가 기능
-- [ ] 사용 통계 대시보드
-- [ ] 챗봇별 사용량 모니터링
+### 우선순위 5: 레거시 인증 연동 후 테스트
+- [ ] **인증형 임베드 테스트** - `npx ts-node scripts/generate-embed-token.ts` 사용
+- [ ] 레거시 인증 시스템 연동 테스트
 
 ---
 
@@ -301,6 +352,7 @@ npm run start
 
 ### ChatbotApp (챗봇 앱)
 - `id`, `name`, `description`
+- `nameKo`, `nameEn`, `descriptionKo`, `descriptionEn` (Phase 8a - 다국어)
 - `difyAppId`, `apiKeyEncrypted`, `apiUrl`
 - `isPublic`, `requireAuth`, `allowAnonymous`, `maxAnonymousMsgs` (Phase 7)
 - `isActive`, `sortOrder`
@@ -396,6 +448,26 @@ npm run start
 
 ---
 
+## 🤖 Claude Code 작업 규칙
+
+### Context7 MCP 사용
+다음 상황에서는 **반드시 Context7 MCP 서버**를 사용하여 최신 라이브러리/API 문서를 참조할 것:
+
+1. **코드 생성 시**: 새로운 기능 구현, 컴포넌트 작성, API 라우트 생성
+2. **설정 및 구성 시**: 라이브러리 설정, 빌드 구성, 환경 설정
+3. **라이브러리/API 문서 필요 시**: 사용법 확인, 타입 정의, 옵션 파라미터 확인
+
+**주요 대상 라이브러리**:
+- Next.js 15
+- React 19
+- Prisma 7
+- Tailwind CSS 4
+- Radix UI
+- jose (JWT)
+- Dify API
+
+---
+
 ## 🐛 알려진 이슈
 
 1. **Windows symlink 오류** (낮은 우선순위)
@@ -417,5 +489,5 @@ npm run start
 
 ---
 
-**마지막 업데이트**: 2026-01-29
-**Phase 7 완료**: 익명 사용자 지원 구현 완료
+**마지막 업데이트**: 2026-02-03
+**Phase 8a 완료**: 다국어 지원, 레퍼런스 표시, 멀티모달 익명 지원

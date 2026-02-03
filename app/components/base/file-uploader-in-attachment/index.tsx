@@ -87,23 +87,26 @@ const FileUploaderInAttachment = ({
 
   return (
     <div>
-      <div className='flex items-center space-x-1'>
+      {/* 상단 업로드 버튼 제거 - 입력창 왼쪽 아이콘으로 통합 */}
+      {/* <div className='flex items-center space-x-1'>
         {options.map(renderOption)}
-      </div>
-      <div className='mt-1 space-y-1'>
-        {
-          files.map(file => (
-            <FileItem
-              key={file.id}
-              file={file}
-              showDeleteAction
-              showDownloadAction={false}
-              onRemove={() => handleRemoveFile(file.id)}
-              onReUpload={() => handleReUploadFile(file.id)}
-            />
-          ))
-        }
-      </div>
+      </div> */}
+      {files.length > 0 && (
+        <div className='space-y-1'>
+          {
+            files.map(file => (
+              <FileItem
+                key={file.id}
+                file={file}
+                showDeleteAction
+                showDownloadAction={false}
+                onRemove={() => handleRemoveFile(file.id)}
+                onReUpload={() => handleReUploadFile(file.id)}
+              />
+            ))
+          }
+        </div>
+      )}
     </div>
   )
 }

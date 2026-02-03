@@ -10,6 +10,7 @@ interface FileUploadParams {
   onProgressCallback: (progress: number) => void
   onSuccessCallback: (res: { id: string }) => void
   onErrorCallback: () => void
+  appId?: string
 }
 type FileUpload = (v: FileUploadParams, isPublic?: boolean, url?: string) => void
 export const fileUpload: FileUpload = ({
@@ -17,6 +18,7 @@ export const fileUpload: FileUpload = ({
   onProgressCallback,
   onSuccessCallback,
   onErrorCallback,
+  appId,
 }) => {
   const formData = new FormData()
   formData.append('file', file)
@@ -31,7 +33,7 @@ export const fileUpload: FileUpload = ({
     xhr: new XMLHttpRequest(),
     data: formData,
     onprogress: onProgress,
-  })
+  }, appId)
     .then((res: { id: string }) => {
       onSuccessCallback(res)
     })

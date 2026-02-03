@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { AppProvider } from '@/app/components/providers/app-provider'
 import type { AppConfig } from '@/hooks/use-app'
 import SimpleChatMain from '@/app/components/simple-chat-main'
 import Toast from '@/app/components/base/toast'
 
 export default function SimpleChatPage() {
+  const { t } = useTranslation()
   const params = useParams()
   const router = useRouter()
   const appId = params.appId as string
@@ -35,11 +37,11 @@ export default function SimpleChatPage() {
 
       if (!response.ok) {
         if (response.status === 404) {
-          setError('챗봇을 찾을 수 없습니다.')
+          setError(t('app.chatbot.notFound'))
           return
         }
         if (response.status === 403) {
-          setError('이 챗봇은 비공개입니다. 관리자에게 문의하세요.')
+          setError(t('app.chatbot.private'))
           return
         }
         throw new Error('Failed to fetch app')
@@ -50,7 +52,7 @@ export default function SimpleChatPage() {
     }
     catch (error) {
       console.error('Failed to fetch app:', error)
-      setError('챗봇 정보를 불러오는데 실패했습니다.')
+      setError(t('app.chatbot.loadError'))
     }
     finally {
       setLoading(false)
@@ -60,7 +62,7 @@ export default function SimpleChatPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="text-gray-500">로딩 중...</div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -84,13 +86,13 @@ export default function SimpleChatPage() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">오류 발생</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('app.chatbot.errorTitle')}</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            다시 시도
+            {t('app.chatbot.retry')}
           </button>
         </div>
       </div>

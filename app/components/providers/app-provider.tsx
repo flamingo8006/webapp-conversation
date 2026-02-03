@@ -7,6 +7,11 @@ export interface AppConfig {
   id: string
   name: string
   description: string | null
+  // 다국어 필드 (Phase 8a-2)
+  nameKo?: string | null
+  nameEn?: string | null
+  descriptionKo?: string | null
+  descriptionEn?: string | null
   difyAppId: string
   apiUrl: string
   iconUrl: string | null

@@ -12,8 +12,15 @@ datasource db {
 // 챗봇 앱 테이블
 model ChatbotApp {
   id              String   @id @default(cuid())
-  name            String
+  name            String                            // 레거시 호환용 (기본값)
   description     String?
+
+  // 다국어 필드 (Phase 8a-2)
+  nameKo          String?  @map("name_ko")
+  nameEn          String?  @map("name_en")
+  descriptionKo   String?  @map("description_ko")
+  descriptionEn   String?  @map("description_en")
+
   difyAppId       String   @map("dify_app_id")
   apiKeyEncrypted String   @map("api_key_encrypted")  // 암호화된 API Key
   apiUrl          String   @default("https://api.dify.ai/v1") @map("api_url")

@@ -73,6 +73,10 @@ export async function POST(request: NextRequest) {
     const {
       name,
       description,
+      nameKo,
+      nameEn,
+      descriptionKo,
+      descriptionEn,
       difyAppId,
       apiKey,
       apiUrl,
@@ -100,6 +104,10 @@ export async function POST(request: NextRequest) {
     const app = await createChatbotApp({
       name,
       description,
+      nameKo,
+      nameEn,
+      descriptionKo,
+      descriptionEn,
       difyAppId,
       apiKey, // 평문으로 전달, repository에서 암호화
       apiUrl,

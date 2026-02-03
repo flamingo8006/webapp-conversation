@@ -61,6 +61,22 @@ export async function GET(
     // 메시지 조회
     const { data }: any = await client.getConversationMessages(difyUser, conversationId)
 
+    // 파일 URL 변환: 상대 경로를 전체 URL로 변환
+    const difyBaseUrl = app.apiUrl?.replace('/v1', '') || ''
+    if (difyBaseUrl && data.data) {
+      data.data = data.data.map((message: any) => {
+        if (message.message_files) {
+          message.message_files = message.message_files.map((file: any) => {
+            if (file.url && file.url.startsWith('/files/')) {
+              file.url = `${difyBaseUrl}${file.url}`
+            }
+            return file
+          })
+        }
+        return message
+      })
+    }
+
     return NextResponse.json(data)
   }
   catch (error: any) {

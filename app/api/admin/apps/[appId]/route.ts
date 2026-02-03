@@ -90,6 +90,10 @@ export async function PUT(
     const {
       name,
       description,
+      nameKo,
+      nameEn,
+      descriptionKo,
+      descriptionEn,
       difyAppId,
       apiKey,
       apiUrl,
@@ -111,6 +115,10 @@ export async function PUT(
     const app = await updateChatbotApp(appId, {
       name,
       description,
+      nameKo,
+      nameEn,
+      descriptionKo,
+      descriptionEn,
       difyAppId,
       apiKey, // 새 API Key (있는 경우에만 업데이트)
       apiUrl,

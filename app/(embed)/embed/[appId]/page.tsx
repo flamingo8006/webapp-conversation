@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { AppProvider } from '@/app/components/providers/app-provider'
 import { EmbedChat } from '@/app/components/embed/embed-chat'
 import type { AppConfig } from '@/hooks/use-app'
 
 export default function EmbedPage() {
+  const { t } = useTranslation()
   const params = useParams()
   const searchParams = useSearchParams()
   const appId = params.appId as string
@@ -18,7 +20,7 @@ export default function EmbedPage() {
 
   useEffect(() => {
     if (!token) {
-      setError('인증 토큰이 필요합니다.')
+      setError(t('app.embed.tokenRequired'))
       setLoading(false)
       return
     }
@@ -40,7 +42,7 @@ export default function EmbedPage() {
     }
     catch (err) {
       console.error('Failed to fetch app:', err)
-      setError('챗봇을 불러올 수 없습니다.')
+      setError(t('app.chatbot.loadError'))
     }
     finally {
       setLoading(false)
@@ -50,7 +52,7 @@ export default function EmbedPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-transparent">
-        <div className="text-gray-500">로딩 중...</div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -61,7 +63,7 @@ export default function EmbedPage() {
         <div className="text-center">
           <p className="text-red-600 mb-2">{error}</p>
           <p className="text-sm text-gray-500">
-            관리자에게 문의하세요.
+            {t('app.embed.contactAdmin')}
           </p>
         </div>
       </div>

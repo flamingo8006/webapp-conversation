@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { MessageSquare } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { AppCard } from './app-card'
 import type { AppConfig } from '@/hooks/use-app'
 import Toast from '@/app/components/base/toast'
@@ -29,6 +30,7 @@ function AppCardSkeleton() {
 }
 
 export function AppList() {
+  const { t } = useTranslation()
   const [apps, setApps] = useState<AppConfig[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -52,7 +54,7 @@ export function AppList() {
       console.error('Failed to fetch apps:', error)
       Toast.notify({
         type: 'error',
-        message: '챗봇 목록을 불러오는데 실패했습니다.',
+        message: t('app.portal.loadError'),
       })
     }
     finally {
@@ -77,10 +79,10 @@ export function AppList() {
           <MessageSquare className="w-16 h-16 mx-auto" strokeWidth={1.5} />
         </div>
         <p className="text-foreground text-lg font-medium mb-2">
-          사용 가능한 챗봇이 없습니다
+          {t('app.portal.noChatbots')}
         </p>
         <p className="text-muted-foreground text-sm">
-          관리자에게 문의하여 챗봇을 추가해주세요.
+          {t('app.portal.contactAdmin')}
         </p>
       </div>
     )

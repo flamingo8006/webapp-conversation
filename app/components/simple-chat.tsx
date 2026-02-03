@@ -62,14 +62,30 @@ const SimpleChat: FC<ISimpleChatProps> = ({
 
   const [query, setQuery] = React.useState('')
   const queryRef = useRef('')
+  const isInitialLoad = useRef(true)
 
   // 자동 스크롤
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToBottom = (instant = false) => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: instant ? 'instant' : 'smooth'
+    })
   }
 
+  // 채팅 리스트 변경 시 스크롤
   useEffect(() => {
-    scrollToBottom()
+    if (chatList.length > 0) {
+      // 초기 로드 시에는 즉시 스크롤 (애니메이션 없이)
+      if (isInitialLoad.current) {
+        // 약간의 딜레이 후 스크롤 (렌더링 완료 대기)
+        setTimeout(() => {
+          scrollToBottom(true)
+          isInitialLoad.current = false
+        }, 100)
+      } else {
+        // 새 메시지 시에는 부드러운 스크롤
+        scrollToBottom(false)
+      }
+    }
   }, [chatList])
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -165,7 +181,7 @@ const SimpleChat: FC<ISimpleChatProps> = ({
                   <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
                 </div>
                 <p className="text-muted-foreground text-xs sm:text-sm">
-                  무엇을 도와드릴까요?
+                  {t('app.chat.welcome')}
                 </p>
               </div>
             </div>
@@ -225,20 +241,22 @@ const SimpleChat: FC<ISimpleChatProps> = ({
                       />
                       <div className="mx-1 w-[1px] h-4 bg-border" />
                     </div>
-                    <div className="pl-[52px] pt-2">
-                      <ImageList
-                        list={files}
-                        onRemove={onRemove}
-                        onReUpload={onReUpload}
-                        onImageLinkLoadSuccess={onImageLinkLoadSuccess}
-                        onImageLinkLoadError={onImageLinkLoadError}
-                      />
-                    </div>
+                    {files.length > 0 && (
+                      <div className="pl-[52px] pt-2">
+                        <ImageList
+                          list={files}
+                          onRemove={onRemove}
+                          onReUpload={onReUpload}
+                          onImageLinkLoadSuccess={onImageLinkLoadSuccess}
+                          onImageLinkLoadError={onImageLinkLoadError}
+                        />
+                      </div>
+                    )}
                   </>
                 )
               }
               {
-                fileConfig?.enabled && (
+                fileConfig?.enabled && attachmentFiles.length > 0 && (
                   <div className={`${visionConfig?.enabled ? 'pl-[52px]' : 'pl-3'} pt-2`}>
                     <FileUploaderInAttachmentWrapper
                       fileConfig={fileConfig}
@@ -251,15 +269,16 @@ const SimpleChat: FC<ISimpleChatProps> = ({
               <Textarea
                 ref={textareaRef}
                 className={cn(
-                  'min-h-[44px] max-h-[120px] border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 py-3 pr-20 sm:pr-24 text-sm',
+                  'min-h-[44px] max-h-[120px] border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 pt-2.5 pb-3 pr-20 sm:pr-24 text-sm',
                   visionConfig?.enabled ? 'pl-12 sm:pl-14' : 'pl-3 sm:pl-4'
                 )}
                 value={query}
                 onChange={handleContentChange}
                 onKeyUp={handleKeyUp}
                 onKeyDown={handleKeyDown}
-                placeholder="메시지를 입력하세요..."
+                placeholder={t('app.chat.inputPlaceholder')}
                 rows={1}
+                autoFocus
               />
               <div className="absolute bottom-2 sm:bottom-2.5 right-2 sm:right-3 flex items-center gap-1.5 sm:gap-2">
                 <span className="h-5 sm:h-6 leading-5 sm:leading-6 text-[10px] sm:text-xs bg-muted text-muted-foreground px-1.5 sm:px-2 rounded">
@@ -283,8 +302,8 @@ const SimpleChat: FC<ISimpleChatProps> = ({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>전송: Enter</p>
-                      <p>줄바꿈: Shift + Enter</p>
+                      <p>{t('app.chat.sendHint')}</p>
+                      <p>{t('app.chat.newlineHint')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

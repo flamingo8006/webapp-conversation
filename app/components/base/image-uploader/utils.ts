@@ -7,6 +7,7 @@ interface ImageUploadParams {
   onProgressCallback: (progress: number) => void
   onSuccessCallback: (res: { id: string }) => void
   onErrorCallback: () => void
+  appId?: string
 }
 type ImageUpload = (v: ImageUploadParams) => void
 export const imageUpload: ImageUpload = ({
@@ -14,6 +15,7 @@ export const imageUpload: ImageUpload = ({
   onProgressCallback,
   onSuccessCallback,
   onErrorCallback,
+  appId,
 }) => {
   const formData = new FormData()
   formData.append('file', file)
@@ -28,7 +30,7 @@ export const imageUpload: ImageUpload = ({
     xhr: new XMLHttpRequest(),
     data: formData,
     onprogress: onProgress,
-  })
+  }, appId)
     .then((res: { id: string }) => {
       onSuccessCallback(res)
     })

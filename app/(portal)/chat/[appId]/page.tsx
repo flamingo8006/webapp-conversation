@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { AppProvider } from '@/app/components/providers/app-provider'
 import type { AppConfig } from '@/hooks/use-app'
 import Main from '@/app/components'
 import Toast from '@/app/components/base/toast'
 
 export default function ChatPage() {
+  const { t } = useTranslation()
   const params = useParams()
   const router = useRouter()
   const appId = params.appId as string
@@ -21,13 +23,22 @@ export default function ChatPage() {
 
   const fetchApp = async () => {
     try {
-      const response = await fetch(`/api/admin/apps/${appId}`)
+      // Phase 7: 공개 API 사용 (익명 접근 가능)
+      const response = await fetch(`/api/apps/${appId}/info`)
 
       if (!response.ok) {
         if (response.status === 404) {
           Toast.notify({
             type: 'error',
-            message: '챗봇을 찾을 수 없습니다.',
+            message: t('app.chatbot.notFound'),
+          })
+          router.push('/')
+          return
+        }
+        if (response.status === 403) {
+          Toast.notify({
+            type: 'error',
+            message: t('app.chatbot.private'),
           })
           router.push('/')
           return
@@ -42,7 +53,7 @@ export default function ChatPage() {
       console.error('Failed to fetch app:', error)
       Toast.notify({
         type: 'error',
-        message: '챗봇 정보를 불러오는데 실패했습니다.',
+        message: t('app.chatbot.loadError'),
       })
       router.push('/')
     }
@@ -54,7 +65,7 @@ export default function ChatPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-500">로딩 중...</div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }

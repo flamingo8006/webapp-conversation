@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { imageUpload } from './utils'
 import Toast from '@/app/components/base/toast'
@@ -7,6 +8,7 @@ import type { ImageFile } from '@/types/app'
 export const useImageFiles = () => {
   const { t } = useTranslation()
   const { notify } = Toast
+  const params = useParams()
   const [files, setFiles] = useState<ImageFile[]>([])
   const filesRef = useRef<ImageFile[]>([])
 
@@ -83,6 +85,7 @@ export const useImageFiles = () => {
           filesRef.current = newFiles
           setFiles(newFiles)
         },
+        appId: params.appId as string,
       })
     }
   }

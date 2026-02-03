@@ -188,9 +188,10 @@ export const useFile = (fileConfig: FileUpload) => {
           notify({ type: 'error', message: t('common.fileUploader.uploadFromComputerUploadError') })
           handleUpdateFile({ ...uploadingFile, progress: -1 })
         },
+        appId: params.appId as string,
       })
     }
-  }, [fileStore, notify, t, handleUpdateFile])
+  }, [fileStore, notify, t, handleUpdateFile, params.appId])
 
   const startProgressTimer = useCallback((fileId: string) => {
     const timer = setInterval(() => {
@@ -290,6 +291,7 @@ export const useFile = (fileConfig: FileUpload) => {
             notify({ type: 'error', message: t('common.fileUploader.uploadFromComputerUploadError') })
             handleUpdateFile({ ...uploadingFile, progress: -1 })
           },
+          appId: params.appId as string,
         })
       },
       false,

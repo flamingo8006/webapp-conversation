@@ -7,6 +7,11 @@ export interface ChatbotAppPublic {
   id: string
   name: string
   description: string | null
+  // 다국어 필드 (Phase 8a-2)
+  nameKo: string | null
+  nameEn: string | null
+  descriptionKo: string | null
+  descriptionEn: string | null
   difyAppId: string
   apiUrl: string
   iconUrl: string | null
@@ -30,6 +35,10 @@ export interface ChatbotAppWithKey extends ChatbotAppPublic {
 export async function createChatbotApp(data: {
   name: string
   description?: string
+  nameKo?: string
+  nameEn?: string
+  descriptionKo?: string
+  descriptionEn?: string
   difyAppId: string
   apiKey: string
   apiUrl?: string
@@ -46,6 +55,10 @@ export async function createChatbotApp(data: {
     data: {
       name: data.name,
       description: data.description,
+      nameKo: data.nameKo,
+      nameEn: data.nameEn,
+      descriptionKo: data.descriptionKo,
+      descriptionEn: data.descriptionEn,
       difyAppId: data.difyAppId,
       apiKeyEncrypted: encryptedApiKey,
       apiUrl: data.apiUrl || 'https://api.dify.ai/v1',
@@ -69,6 +82,10 @@ export async function updateChatbotApp(
   data: {
     name?: string
     description?: string
+    nameKo?: string
+    nameEn?: string
+    descriptionKo?: string
+    descriptionEn?: string
     difyAppId?: string
     apiKey?: string // 새 API Key (있는 경우에만 업데이트)
     apiUrl?: string
@@ -178,6 +195,10 @@ function toPublic(app: ChatbotApp): ChatbotAppPublic {
     id: app.id,
     name: app.name,
     description: app.description,
+    nameKo: app.nameKo,
+    nameEn: app.nameEn,
+    descriptionKo: app.descriptionKo,
+    descriptionEn: app.descriptionEn,
     difyAppId: app.difyAppId,
     apiUrl: app.apiUrl,
     iconUrl: app.iconUrl,

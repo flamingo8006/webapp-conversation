@@ -1,6 +1,7 @@
 'use client'
 
 import { MessageSquare, LayoutGrid } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { AppConfig } from '@/hooks/use-app'
 import {
   Dialog,
@@ -17,6 +18,14 @@ interface ChatTypeModalProps {
 }
 
 export function ChatTypeModal({ app, isOpen, onClose }: ChatTypeModalProps) {
+  const { t, i18n } = useTranslation()
+
+  // Phase 8a-2: 현재 언어에 맞는 앱 이름 표시
+  const currentLang = i18n.language
+  const displayName = currentLang === 'ko'
+    ? (app.nameKo || app.name)
+    : (app.nameEn || app.nameKo || app.name)
+
   const handleSimpleChat = () => {
     window.open(`/simple-chat/${app.id}`, '_blank')
     onClose()
@@ -31,9 +40,9 @@ export function ChatTypeModal({ app, isOpen, onClose }: ChatTypeModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md" onClick={e => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>채팅 화면 선택</DialogTitle>
+          <DialogTitle>{t('app.chatType.title')}</DialogTitle>
           <DialogDescription>
-            {app.name} 챗봇을 어떤 화면으로 시작하시겠습니까?
+            {displayName}
           </DialogDescription>
         </DialogHeader>
 
@@ -48,8 +57,8 @@ export function ChatTypeModal({ app, isOpen, onClose }: ChatTypeModalProps) {
                 <MessageSquare className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <p className="font-semibold text-foreground">심플형</p>
-                <p className="text-sm text-muted-foreground">깔끔하고 세련된 단순 채팅 화면</p>
+                <p className="font-semibold text-foreground">{t('app.chatType.simple')}</p>
+                <p className="text-sm text-muted-foreground">{t('app.chatType.simpleDesc')}</p>
               </div>
             </div>
           </button>
@@ -64,8 +73,8 @@ export function ChatTypeModal({ app, isOpen, onClose }: ChatTypeModalProps) {
                 <LayoutGrid className="w-6 h-6 text-purple-600" />
               </div>
               <div>
-                <p className="font-semibold text-foreground">앱형</p>
-                <p className="text-sm text-muted-foreground">대화 히스토리와 다양한 기능 포함</p>
+                <p className="font-semibold text-foreground">{t('app.chatType.app')}</p>
+                <p className="text-sm text-muted-foreground">{t('app.chatType.appDesc')}</p>
               </div>
             </div>
           </button>

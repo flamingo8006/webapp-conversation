@@ -2,6 +2,7 @@
 
 import type { ChangeEvent, FC } from 'react'
 import { useState } from 'react'
+import { useParams } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { imageUpload } from './utils'
 import type { ImageFile } from '@/types/app'
@@ -24,6 +25,7 @@ const Uploader: FC<UploaderProps> = ({
   const [hovering, setHovering] = useState(false)
   const { notify } = Toast
   const { t } = useTranslation()
+  const params = useParams()
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -61,6 +63,7 @@ const Uploader: FC<UploaderProps> = ({
             notify({ type: 'error', message: t('common.imageUploader.uploadFromComputerUploadError') })
             onUpload({ ...imageFile, progress: -1 })
           },
+          appId: params.appId as string,
         })
       },
       false,
