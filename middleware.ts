@@ -2,12 +2,61 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/jwt'
 
+/**
+ * 간단한 IP 화이트리스트 체크 (Edge Runtime용)
+ * CIDR 지원 (기본적인 /24, /16 등)
+ */
+function isIpAllowedSimple(ip: string, allowedList: string): boolean {
+  if (!allowedList || allowedList.trim() === '') {
+    return true // 설정 없으면 모든 IP 허용
+  }
+
+  const rules = allowedList.split(',').map(s => s.trim()).filter(Boolean)
+
+  for (const rule of rules) {
+    if (rule.includes('/')) {
+      // CIDR 표기법
+      const [network, maskStr] = rule.split('/')
+      const mask = parseInt(maskStr, 10)
+      if (Number.isNaN(mask) || mask < 0 || mask > 32) { continue }
+
+      const ipParts = ip.split('.').map(Number)
+      const networkParts = network.split('.').map(Number)
+
+      if (ipParts.length !== 4 || networkParts.length !== 4) { continue }
+
+      // 간단한 비교: 마스크에 따라 앞부분 비교
+      const bytesToCompare = Math.floor(mask / 8)
+      let match = true
+
+      for (let i = 0; i < bytesToCompare; i++) {
+        if (ipParts[i] !== networkParts[i]) {
+          match = false
+          break
+        }
+      }
+
+      if (match) { return true }
+    }
+    else {
+      // 단일 IP
+      if (ip === rule) { return true }
+    }
+  }
+
+  return false
+}
+
 // 인증이 필요 없는 경로 (startsWith로 체크)
 const publicPathPrefixes = [
   '/api/auth/login',
   '/api/auth/verify',
+  '/api/auth/token', // Phase 9a: 토큰 처리 API
   '/api/apps/public',
-  '/login',
+  '/api/admin/auth/login', // Phase 8b: 관리자 로그인 API
+  '/api/errors/report', // Phase 8b: 에러 리포트 API
+  '/login', // Phase 9a: 안내 페이지로 변경됨
+  '/admin/login', // Phase 8b: 관리자 로그인 페이지
   '/_next',
   '/favicon.ico',
   '/public',
@@ -28,8 +77,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 공개 경로는 통과 (prefix 매칭 또는 정확히 일치)
-  if (publicPathPrefixes.some(path => pathname.startsWith(path)) ||
-      publicExactPaths.includes(pathname)) {
+  if (publicPathPrefixes.some(path => pathname.startsWith(path))
+    || publicExactPaths.includes(pathname)) {
     return NextResponse.next()
   }
 
@@ -110,6 +159,31 @@ export async function middleware(request: NextRequest) {
     return new NextResponse('Unauthorized', { status: 401 })
   }
 
+  // Phase 8b: 관리자 경로 처리 (일반 인증보다 먼저 체크)
+  if (adminPaths.some(path => pathname.startsWith(path))) {
+    // Phase 9b: 관리자 페이지 IP 화이트리스트 체크
+    const allowedIps = process.env.ADMIN_ALLOWED_IPS || ''
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown'
+
+    if (!isIpAllowedSimple(clientIp, allowedIps)) {
+      return new NextResponse('Forbidden: IP not allowed', { status: 403 })
+    }
+
+    // API는 별도 인증 체크 (admin-auth.ts에서 처리)
+    if (pathname.startsWith('/api/admin')) {
+      return NextResponse.next()
+    }
+    // 관리자 페이지는 admin_token 쿠키로 인증
+    const adminToken = request.cookies.get('admin_token')?.value
+    if (!adminToken) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+    // admin_token 검증은 AdminAuthProvider에서 처리
+    return NextResponse.next()
+  }
+
   // 일반 경로: 쿠키 또는 Authorization 헤더에서 토큰 확인
   let token = request.cookies.get('auth_token')?.value
 
@@ -120,14 +194,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 토큰이 없으면 로그인 페이지로 리다이렉트
+  // Phase 9a: 토큰이 없으면 포털 메인으로 리다이렉트 (익명 접근 허용)
   if (!token) {
     if (pathname.startsWith('/api/')) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
+    // 인증 필요 페이지 접근 시 메인으로 리다이렉트
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   // 토큰 검증
@@ -136,19 +209,8 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/api/')) {
       return new NextResponse('Invalid token', { status: 401 })
     }
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
-  }
-
-  // 관리자 경로 권한 확인
-  if (adminPaths.some(path => pathname.startsWith(path))) {
-    if (payload.role !== 'admin') {
-      if (pathname.startsWith('/api/')) {
-        return new NextResponse('Forbidden', { status: 403 })
-      }
-      return NextResponse.redirect(new URL('/', request.url))
-    }
+    // 무효한 토큰은 메인으로 리다이렉트
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   // 요청 헤더에 사용자 정보 추가 (API 라우트에서 사용)

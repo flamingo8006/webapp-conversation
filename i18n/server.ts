@@ -6,6 +6,19 @@ import { match } from '@formatjs/intl-localematcher'
 import type { Locale } from '.'
 import { i18n } from '.'
 
+// Check if a locale string is valid for Intl
+function isValidLocale(locale: string): boolean {
+  if (!locale || locale === '*')
+  { return false }
+  try {
+    Intl.getCanonicalLocales(locale)
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
 export const getLocaleOnServer = async (): Promise<Locale> => {
   // @ts-expect-error locales are readonly
   const locales: string[] = i18n.locales
@@ -24,7 +37,15 @@ export const getLocaleOnServer = async (): Promise<Locale> => {
     languages = new Negotiator({ headers: negotiatorHeaders }).languages()
   }
 
+  // Filter out invalid locale values (e.g., '*', empty strings)
+  const validLanguages = languages.filter(isValidLocale)
+
+  // If no valid languages, use default locale
+  if (!validLanguages.length) {
+    return i18n.defaultLocale as Locale
+  }
+
   // match locale
-  const matchedLocale = match(languages, locales, i18n.defaultLocale) as Locale
+  const matchedLocale = match(validLanguages, locales, i18n.defaultLocale) as Locale
   return matchedLocale
 }

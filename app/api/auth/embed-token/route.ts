@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { signToken } from '@/lib/jwt'
 
 /**
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     if (!loginId || !empNo || !name) {
       return NextResponse.json(
         { error: 'loginId, empNo, name are required' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     console.error('Embed token generation error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

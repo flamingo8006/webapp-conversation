@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next'
 import { AppProvider } from '@/app/components/providers/app-provider'
 import type { AppConfig } from '@/hooks/use-app'
 import SimpleChatMain from '@/app/components/simple-chat-main'
-import Toast from '@/app/components/base/toast'
 
 export default function SimpleChatPage() {
   const { t } = useTranslation()

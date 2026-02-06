@@ -4,10 +4,10 @@ import type { ChatSession, ChatMessage } from '@prisma/client'
 interface CreateSessionParams {
   appId: string
   isAnonymous: boolean
-  sessionId?: string        // 익명 사용자
-  userId?: string           // 인증 사용자 (empNo)
-  userLoginId?: string      // 인증 사용자
-  userName?: string         // 인증 사용자
+  sessionId?: string // 익명 사용자
+  userId?: string // 인증 사용자 (empNo)
+  userLoginId?: string // 인증 사용자
+  userName?: string // 인증 사용자
 }
 
 /**
@@ -178,6 +178,7 @@ export async function updateSessionConversationId(
 export async function saveMessage(data: {
   sessionId: string
   difyMessageId?: string
+  parentMessageId?: string // assistant 메시지가 어떤 user 메시지에 대한 답변인지
   role: 'user' | 'assistant'
   content: string
   files?: any
@@ -187,6 +188,7 @@ export async function saveMessage(data: {
     data: {
       sessionId: data.sessionId,
       difyMessageId: data.difyMessageId,
+      parentMessageId: data.parentMessageId,
       role: data.role,
       content: data.content,
       files: data.files,
@@ -217,5 +219,94 @@ export async function updateMessageFeedback(
   return await prisma.chatMessage.update({
     where: { id: messageId },
     data: { feedback },
+  })
+}
+
+/**
+ * Phase 8c: 세션 제목 업데이트
+ */
+export async function updateSessionTitle(
+  sessionId: string,
+  customTitle: string,
+): Promise<ChatSession> {
+  return await prisma.chatSession.update({
+    where: { id: sessionId },
+    data: { customTitle },
+  })
+}
+
+/**
+ * Phase 8c: 세션 고정/고정해제
+ */
+export async function toggleSessionPin(
+  sessionId: string,
+  isPinned: boolean,
+): Promise<ChatSession> {
+  return await prisma.chatSession.update({
+    where: { id: sessionId },
+    data: {
+      isPinned,
+      pinnedAt: isPinned ? new Date() : null,
+    },
+  })
+}
+
+/**
+ * Phase 8c: 세션 소프트 삭제 (isActive=false)
+ */
+export async function softDeleteSession(
+  sessionId: string,
+): Promise<ChatSession> {
+  return await prisma.chatSession.update({
+    where: { id: sessionId },
+    data: { isActive: false },
+  })
+}
+
+/**
+ * Phase 8c: 세션 조회 (by id)
+ */
+export async function getSessionById(
+  sessionId: string,
+): Promise<ChatSession | null> {
+  return await prisma.chatSession.findUnique({
+    where: { id: sessionId },
+  })
+}
+
+/**
+ * Phase 8c: 세션 조회 (by Dify conversation_id)
+ */
+export async function getSessionByDifyConversationId(
+  appId: string,
+  difyConversationId: string,
+): Promise<ChatSession | null> {
+  return await prisma.chatSession.findFirst({
+    where: {
+      appId,
+      difyConversationId,
+      isActive: true,
+    },
+  })
+}
+
+/**
+ * Phase 8c-3: 앱+사용자별 세션 목록 조회 (conversations API 머지용)
+ */
+export async function getSessionsByAppAndUser(
+  appId: string,
+  userId?: string,
+  anonymousSessionId?: string,
+): Promise<ChatSession[]> {
+  return await prisma.chatSession.findMany({
+    where: {
+      appId,
+      isActive: true,
+      ...(userId
+        ? { userId, isAnonymous: false }
+        : anonymousSessionId
+          ? { sessionId: anonymousSessionId, isAnonymous: true }
+          : {}),
+    },
   })
 }

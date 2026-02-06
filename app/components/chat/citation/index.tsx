@@ -58,11 +58,13 @@ const Citation: FC<CitationProps> = ({ citations, className }) => {
         <span className="font-medium">
           {t('app.citation.title', { count: citations.length })}
         </span>
-        {isExpanded ? (
-          <ChevronUp className="w-3.5 h-3.5 ml-auto" />
-        ) : (
-          <ChevronDown className="w-3.5 h-3.5 ml-auto" />
-        )}
+        {isExpanded
+          ? (
+            <ChevronUp className="w-3.5 h-3.5 ml-auto" />
+          )
+          : (
+            <ChevronDown className="w-3.5 h-3.5 ml-auto" />
+          )}
       </button>
 
       {/* 출처 목록 */}

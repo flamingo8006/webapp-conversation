@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { ChatClient } from 'dify-client'
 import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
+import { getSessionsByAppAndUser } from '@/lib/repositories/chat-session'
 
 export async function GET(
   request: NextRequest,
@@ -24,13 +25,16 @@ export async function GET(
     const user = await getUserFromRequest(request)
     const sessionId = request.headers.get('x-session-id')
     // middleware의 x-is-anonymous 헤더 또는 sessionId 존재 여부로 익명 판단
-    const isAnonymous = request.headers.get('x-is-anonymous') === 'true' || (!user && !!sessionId)
+    const _isAnonymous = request.headers.get('x-is-anonymous') === 'true' || (!user && !!sessionId)
 
     let difyUser: string
+    let dbUserId: string | undefined
+    let dbSessionId: string | undefined
 
     // 공개 챗봇 + 익명 허용 (sessionId가 있고 user가 없으면 익명)
     if (app.isPublic && app.allowAnonymous && sessionId && !user) {
       difyUser = `anon_${appId}:${sessionId}`
+      dbSessionId = sessionId
     }
     else {
       // 인증 사용자 처리
@@ -42,15 +46,49 @@ export async function GET(
       }
 
       difyUser = `user_${appId}:${user.empNo}`
+      dbUserId = user.empNo
     }
 
-    // 동적으로 ChatClient 생성
+    // Dify 대화 목록과 DB 세션을 병렬 조회
     const client = new ChatClient(app.apiKey, app.apiUrl)
+    const [difyResult, dbSessions] = await Promise.all([
+      client.getConversations(difyUser),
+      getSessionsByAppAndUser(appId, dbUserId, dbSessionId),
+    ])
 
-    // 대화 목록 조회
-    const { data }: any = await client.getConversations(difyUser)
+    const { data: difyData }: any = difyResult
 
-    return NextResponse.json(data)
+    // DB 세션을 difyConversationId로 매핑
+    const sessionMap = new Map<string, { dbSessionId: string, isPinned: boolean, pinnedAt: Date | null, customTitle: string | null }>()
+    for (const s of dbSessions) {
+      if (s.difyConversationId) {
+        sessionMap.set(s.difyConversationId, {
+          dbSessionId: s.id,
+          isPinned: s.isPinned,
+          pinnedAt: s.pinnedAt,
+          customTitle: s.customTitle,
+        })
+      }
+    }
+
+    // Dify 대화 목록에 DB 세션 정보 머지
+    const conversations = (difyData?.data || []).map((conv: any) => {
+      const dbInfo = sessionMap.get(conv.id)
+      return {
+        ...conv,
+        // customTitle이 있으면 name 덮어쓰기
+        name: dbInfo?.customTitle || conv.name,
+        // DB 정보 추가
+        dbSessionId: dbInfo?.dbSessionId || null,
+        isPinned: dbInfo?.isPinned || false,
+        pinnedAt: dbInfo?.pinnedAt || null,
+      }
+    })
+
+    return NextResponse.json({
+      ...difyData,
+      data: conversations,
+    })
   }
   catch (error: any) {
     console.error('Get conversations error:', error)

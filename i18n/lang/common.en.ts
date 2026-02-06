@@ -17,6 +17,10 @@ const translation = {
     like: 'like',
     dislike: 'dislike',
     ok: 'OK',
+    delete: 'Delete',
+    rename: 'Rename',
+    pin: 'Pin',
+    unpin: 'Unpin',
   },
   imageUploader: {
     uploadFromComputer: 'Upload from Computer',

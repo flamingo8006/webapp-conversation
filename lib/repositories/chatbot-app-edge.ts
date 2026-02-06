@@ -4,7 +4,6 @@
  */
 
 import { prisma } from '@/lib/prisma'
-import type { ChatbotApp } from '@prisma/client'
 
 export interface ChatbotAppPublicEdge {
   id: string

@@ -7,13 +7,12 @@ import { useBoolean, useGetState } from 'ahooks'
 import { MessageSquare } from 'lucide-react'
 import useConversation from '@/hooks/use-conversation'
 import Toast from '@/app/components/base/toast'
-import { fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
+import { fetchAppParams, fetchChatList, fetchConversations, sendChatMessage, updateFeedback } from '@/service'
 import { Card } from '@/components/ui/card'
 import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
 import SimpleChat from '@/app/components/simple-chat'
-import { setLocaleOnClient } from '@/i18n/client'
 import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
 import Loading from '@/app/components/base/loading'
 import { replaceVarWithValues, userInputsFormToPromptVariables } from '@/utils/prompt'
@@ -28,7 +27,7 @@ import LanguageSwitcher from '@/app/components/language-switcher'
 export interface ISimpleChatMainProps {
   params: any
   appId?: string
-  appName?: string  // 챗봇 이름 (상단 헤더 표시용) - 폴백용
+  appName?: string // 챗봇 이름 (상단 헤더 표시용) - 폴백용
 }
 
 const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName }) => {
@@ -107,12 +106,12 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
   const [isChatStarted, { setTrue: setChatStarted }] = useBoolean(false)
 
   // 자동으로 채팅 시작 (Welcome 화면 제거)
-  const handleStartChat = (inputs: Record<string, any>) => {
+  const handleStartChat = (inputs: Record<string, any>, introduction?: string, questions?: string[]) => {
     createNewChat()
     setConversationIdChangeBecauseOfNew(true)
     setCurrInputs(inputs)
     setChatStarted()
-    setChatList(generateNewChatListWithOpenStatement('', inputs))
+    setChatList(generateNewChatListWithOpenStatement(introduction || '', inputs, questions))
   }
 
   // 항상 입력이 설정된 것으로 간주 (Welcome 화면 표시 안함)
@@ -124,6 +123,9 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
 
   const handleConversationSwitch = () => {
     if (!inited) { return }
+
+    // 새 대화가 막 시작된 경우 handleStartChat에서 이미 처리했으므로 스킵
+    if (getConversationIdChangeBecauseOfNew()) { return }
 
     let notSyncToStateIntroduction = ''
     let notSyncToStateInputs: Record<string, any> | undefined | null = {}
@@ -143,7 +145,7 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
       setCurrInputs(notSyncToStateInputs)
     }
 
-    if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding) {
+    if (!isNewConversation && !isResponding) {
       fetchChatList(appId, currConversationId).then((res: any) => {
         const { data } = res
         const newChatList: ChatItem[] = generateNewChatListWithOpenStatement(notSyncToStateIntroduction, notSyncToStateInputs)
@@ -171,7 +173,9 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
       })
     }
 
-    if (isNewConversation && isChatStarted) { setChatList(generateNewChatListWithOpenStatement()) }
+    if (isNewConversation && isChatStarted) {
+      setChatList(generateNewChatListWithOpenStatement())
+    }
   }
   useEffect(handleConversationSwitch, [currConversationId, inited])
 
@@ -194,21 +198,25 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
     }))
   }
 
-  const generateNewChatListWithOpenStatement = (introduction?: string, inputs?: Record<string, any> | null) => {
+  const generateNewChatListWithOpenStatement = (introduction?: string, inputs?: Record<string, any> | null, questions?: string[]) => {
     let calculatedIntroduction = introduction || conversationIntroduction || ''
     const calculatedPromptVariables = inputs || currInputs || null
     if (calculatedIntroduction && calculatedPromptVariables) { calculatedIntroduction = replaceVarWithValues(calculatedIntroduction, promptConfig?.prompt_variables || [], calculatedPromptVariables) }
 
+    // 전달받은 questions 또는 state의 suggestedQuestions 사용
+    const displayQuestions = questions || suggestedQuestions || []
+
+    // Phase 8c: 심플형에서 항상 오프닝 스테이트먼트 표시 (AI 대화 시작 스타일)
+    // introduction이 없으면 기본 환영 메시지 사용
     const openStatement = {
       id: `${Date.now()}`,
-      content: calculatedIntroduction,
+      content: calculatedIntroduction || t('app.chat.welcome'),
       isAnswer: true,
       feedbackDisabled: true,
       isOpeningStatement: true,
-      suggestedQuestions,
+      suggestedQuestions: displayQuestions,
     }
-    // opening statement 제거 - 바로 채팅 시작
-    return []
+    return [openStatement]
   }
 
   // init
@@ -269,9 +277,9 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
 
         if (isNotNewConversation) { setCurrConversationId(_conversationId, appId, false) }
 
-        // 자동으로 새 채팅 시작
+        // 자동으로 새 채팅 시작 - Dify에서 받은 introduction과 suggested_questions 전달
         if (!isNotNewConversation) {
-          handleStartChat({})
+          handleStartChat({}, introduction, suggested_questions)
         }
 
         setInited(true)
@@ -521,6 +529,10 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
         if (messageEnd.metadata?.retriever_resources) {
           responseItem.citation = messageEnd.metadata.retriever_resources
         }
+        // Phase 8c: suggested_questions 수집 (Dify에서 제공하는 경우)
+        if (messageEnd.metadata?.suggested_questions && messageEnd.metadata.suggested_questions.length > 0) {
+          responseItem.suggestedQuestions = messageEnd.metadata.suggested_questions
+        }
 
         if (messageEnd.metadata?.annotation_reply) {
           responseItem.id = messageEnd.id
@@ -685,6 +697,7 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
                   checkCanSend={checkCanSend}
                   visionConfig={visionConfig}
                   fileConfig={fileConfig}
+                  suggestedQuestions={suggestedQuestions}
                 />
               </div>
             </div>

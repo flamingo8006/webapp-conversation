@@ -60,15 +60,17 @@ export function LanguageSwitcher({ className, variant = 'default' }: LanguageSwi
         className={className}
         onClick={() => setIsOpen(!isOpen)}
       >
-        {variant === 'compact' ? (
-          <Globe className="h-4 w-4" />
-        ) : (
-          <>
-            <span className="mr-1.5">{currentLanguage.flag}</span>
-            <span className="hidden sm:inline">{currentLanguage.label}</span>
-            <Globe className="ml-1.5 h-3.5 w-3.5 sm:hidden" />
-          </>
-        )}
+        {variant === 'compact'
+          ? (
+            <Globe className="h-4 w-4" />
+          )
+          : (
+            <>
+              <span className="mr-1.5">{currentLanguage.flag}</span>
+              <span className="hidden sm:inline">{currentLanguage.label}</span>
+              <Globe className="ml-1.5 h-3.5 w-3.5 sm:hidden" />
+            </>
+          )}
       </Button>
 
       {isOpen && (

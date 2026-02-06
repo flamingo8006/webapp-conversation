@@ -2,6 +2,11 @@
 
 이 파일은 Claude Code (claude.ai/code)가 이 저장소에서 작업할 때 참고할 가이드입니다.
 
+## 📂 참고 이미지 폴더
+
+사용자가 참고용으로 올리는 이미지(스크린샷 등)는 아래 경로에 저장됩니다:
+- **`D:\DEV\image`**
+
 ---
 
 ## 📋 프로젝트 개요
@@ -79,20 +84,212 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
   - 포털 화면에서 현재 언어에 맞는 이름/설명 표시
   - 기존 데이터 마이그레이션 (name → nameKo, description → descriptionKo)
 
+### Phase 8b: 관리 인프라 ✅
+- [x] 관리자(Admin) 분리 인증 시스템
+  - Admin 테이블 및 Repository 생성
+  - 별도 JWT (admin_token) 발급/검증
+  - 관리자 로그인 페이지 (`/admin/login`)
+  - bcrypt 비밀번호 해싱
+- [x] 관리자 관리 UI (슈퍼관리자 전용)
+  - 관리자 목록/추가/수정/삭제
+  - 비밀번호 초기화 기능
+  - 역할 관리 (super_admin, admin)
+- [x] 감사 로그 (AuditLog)
+  - 모든 관리자 액션 기록
+  - 필터/검색/페이지네이션
+  - 상세 보기 다이얼로그
+- [x] 사용 통계 대시보드 (DailyUsageStats)
+  - 실시간 통계 (오늘 세션/메시지)
+  - 기간별 트렌드 차트 (recharts)
+  - 챗봇별 사용 순위
+  - 피드백 통계 (좋아요/싫어요)
+- [x] 에러 모니터링 (ErrorLog)
+  - 에러 목록/필터/검색
+  - 상태 관리 (new → investigating → resolved/ignored)
+  - 상세 보기 (스택 트레이스)
+- [x] 시드 스크립트 (`prisma/seed.ts`)
+  - 슈퍼관리자 계정 자동 생성
+- [x] Select 컴포넌트 추가 (shadcn/ui)
+- [x] i18n locale 에러 수정
+
+### Phase 8b 보완: 대시보드 개선 ✅
+- [x] 주간 요약 개선
+  - 활성/비활성 챗봇 숫자 → 챗봇별 주간 메시지/토큰 수 (Top 5)
+  - `getAppRanking`에 `totalTokens` 필드 추가
+- [x] 활동 내역 페이지 (`/admin/activity`)
+  - 메시지 내역 테이블 (시간, 챗봇, 사용자, 역할, 내용)
+  - 챗봇별 필터링 (드롭다운)
+  - 기간별 필터링 (오늘, 최근 7일, 14일, 30일, 90일)
+  - 사용자 이름 검색
+  - 페이지네이션
+- [x] 최근 활동 "더 보기" 버튼
+  - 대시보드에서 활동 내역 페이지로 이동
+- [x] 사이드바에 "활동 내역" 메뉴 추가
+- [x] Q&A 펼침 기능 (활동 내역)
+  - 사용자 질문 행 클릭 시 Q&A 쌍 펼침/접힘
+  - 세션 기반 Q&A 매칭 (5분 이내 답변)
+  - 여러 행 동시 펼침 가능
+  - API에 전체 content 반환 (contentPreview로 미리보기 분리)
+
+### Phase 9a: 포털 인증 정리 ✅
+- [x] /login 페이지 변경 (Mock 계정 제거 → 안내 페이지)
+- [x] Mock 계정 제거 (legacy-auth.ts)
+- [x] 토큰 기반 포털 접근 구현 (/api/auth/token)
+- [x] localStorage → sessionStorage 변경 (익명 세션)
+  - 탭/브라우저 닫으면 세션 삭제 (공용 PC 문제 해결)
+- [x] 포털 챗봇 카드 UI 변경
+  - 익명 사용자: 바로 심플형으로 이동
+  - 인증 사용자: 카드 내 심플형/앱형 선택
+- [x] 익명 사용자 앱형 사용 불가 (심플형만 허용)
+- [x] 로그아웃 후 / 로 이동 (/login 아님)
+
+### Phase 9b: 관리자 보안 강화 ✅
+- [x] 로그인 시도 제한
+  - Admin 테이블에 `loginAttempts`, `lockedUntil` 필드 추가
+  - 환경변수 `ADMIN_MAX_LOGIN_ATTEMPTS` (기본값: 5, 0=무제한)
+  - 환경변수 `ADMIN_LOCKOUT_MINUTES` (기본값: 30분)
+  - 횟수 초과 시 계정 잠금
+  - 잠금 해제 API 및 UI (슈퍼관리자 전용)
+- [x] 비밀번호 정책
+  - 길이: 10~20자
+  - 필수 포함: 영대문자 + 영소문자 + 숫자 + 특수문자
+  - 제외 문자: <, >, ', "
+  - 직전 비밀번호 재사용 불가 (`previousPasswordHash` 필드)
+  - 비밀번호 변경/초기화 시 정책 검증
+- [x] IP 화이트리스트
+  - 환경변수 `ADMIN_ALLOWED_IPS` (쉼표로 구분)
+  - CIDR 표기법 지원 (예: 192.168.1.0/24)
+  - middleware + 로그인 API에서 체크
+  - 미설정 시 모든 IP 허용
+
+### Phase 8c: 앱형 UI 변경 (ChatGPT 스타일) ✅
+- [x] WelcomeScreen 컴포넌트 (`app/components/welcome-screen/index.tsx`)
+  - 중앙 환영 메시지 + 챗봇 아이콘
+  - 중앙 입력창 (바로 새 채팅 시작)
+  - 파일 업로드 지원 (이미지, 문서)
+- [x] ExampleQuestions 컴포넌트 (`app/components/example-questions/index.tsx`)
+  - 2x2 카드 그리드 레이아웃
+  - 클릭 시 해당 질문으로 새 채팅 시작
+  - 다국어 지원 (한/영)
+- [x] Sidebar 개선 (`app/components/sidebar/index.tsx`)
+  - 날짜별 그룹핑 (오늘, 어제, 지난주, 지난달, 이전)
+  - 대화 검색 기능
+  - 호버 시 삭제 버튼 표시
+  - shadcn/ui 컴포넌트 적용
+- [x] Header 개선 (`app/components/header.tsx`)
+  - 언어 선택 드롭다운 통합
+  - 툴팁 추가
+- [x] Chat 개선 (`app/components/chat/index.tsx`)
+  - Sticky bottom 입력창
+  - 자동 크기 조절 textarea
+  - 그라디언트 페이드 효과
+- [x] Main 컴포넌트 리뉴얼 (`app/components/index.tsx`)
+  - 초기 화면 (WelcomeScreen) / 대화 화면 (Chat) 분기
+  - 환영 화면에서 메시지 전송 처리
+- [x] 반응형 디자인
+  - 모바일 (< 768px): 사이드바 토글
+  - 태블릿 (768px ~ 1024px): 사이드바 축소
+  - 데스크톱 (> 1024px): 사이드바 항상 표시
+- [x] 다국어 번역 키 추가 (`i18n/lang/app.ko.ts`, `app.en.ts`)
+  - `welcome` 섹션: title, subtitle, inputPlaceholder, examplesTitle, example1-4
+  - `sidebar` 섹션: newChat, search, today, yesterday, lastWeek, lastMonth, older 등
+
+### Phase 8c-2: 앱형/심플형 채팅 UI 개선 ✅
+- [x] 예시 질문 카드 조건부 표시
+  - Dify에서 `suggested_questions` 없으면 예시 섹션 숨김
+  - defaultExamples 폴백 로직 제거
+- [x] 대화 제목 실시간 업데이트
+  - 새 대화 시작 시 첫 메시지 앞 30자를 임시 제목으로 설정
+- [x] 대화 목록 기능 추가 (고정/이름변경/삭제)
+  - DB 스키마: `customTitle`, `isPinned`, `pinnedAt` 필드 추가
+  - API: `PATCH/DELETE /api/apps/[appId]/sessions/[sessionId]`
+  - Sidebar: 드롭다운 메뉴, 고정 그룹 상단 표시
+  - 이름 변경 다이얼로그
+- [x] 스크롤 동작 개선
+  - WelcomeScreen min-h 제거 → h-full
+  - 페이지 레벨 스크롤 방지 (overflow-hidden)
+- [x] 심플형 Suggested Questions 표시
+  - SimpleChat에 suggestedQuestions props 추가
+  - 초기 화면에 2x2 그리드 예시 질문 카드 표시
+
 ---
 
 ## 🔄 현재 진행 중인 작업
 
-**상태**: Phase 8a 보완 테스트 완료
+**상태**: Phase 8c-3 (디자인 개선 + 버그 수정) 진행 중
 
-**최근 완료한 작업** (2026-02-03):
-- ✅ 포털 메인 화면 다국어 지원 (번역 키 추가, 언어 선택 버튼)
-- ✅ 챗봇 이름/설명 다국어 지원 (DB 스키마, Repository, API, UI)
-- ✅ 기존 데이터 마이그레이션 완료
-- ✅ 심플형 채팅 화면 다국어 앱 이름 표시 버그 수정
+**현재 작업** (2026-02-06~07):
+- ✅ 앱형 레이아웃 변경: [사이드바 | 헤더+채팅] 구조로 변경
+- ✅ 사이드바 접힘 시 대화내역 숨김 (아이콘만 표시)
+- ✅ 채팅 입력창 하단 고정 (flex column 레이아웃)
+- ✅ 대화 제목 15자 초과 시 ... 처리
+- ✅ 채팅 영역 max-w-3xl 중앙 배치
+- ✅ 고정된 대화 앞에 핀 아이콘 표시
+- ✅ 심플형/앱형 면책 문구 추가
+- ✅ 번역 키 추가 (common.operation.delete/rename/pin/unpin)
+- ✅ 세션 API 인증 버그 수정 (잘못된 쿠키명 'token' → getUserFromRequest 패턴)
+- ✅ 클라이언트 fetch에 credentials: 'include' + X-Session-Id 헤더 추가
+- ✅ DropdownMenuContent에 onClick stopPropagation 추가 (React Portal 이벤트 전파 차단)
+- ⚠️ Playwright 자동 테스트에서 고정/이름변경/삭제 모두 정상 동작 확인
+- ⚠️ 사용자 브라우저에서 미확인 (리부팅 후 재테스트 필요)
+
+**다음 세션에서 해야 할 일**:
+1. 서버 시작 (`pnpm dev`) - `.next` 캐시 이미 삭제됨
+2. 시크릿 모드에서 로그인 후 앱형 채팅 접속
+3. 고정/이름변경/삭제 3개 기능 사용자 테스트
+4. 문제 발생 시 브라우저 콘솔(F12) 에러 확인
+
+**이전 완료 작업** (2026-02-06):
+- ✅ Phase 8c-2: 앱형/심플형 채팅 UI 개선
+
+**이전 완료 작업** (2026-02-05):
+- ✅ Phase 8c: 앱형 UI 변경 (ChatGPT 스타일)
+
+**이전 완료 작업** (2026-02-04):
+- ✅ Phase 9a: 포털 인증 정리
+- ✅ Phase 9b: 관리자 보안 강화
 
 **알려진 버그**:
 - Windows에서 Next.js standalone 빌드 시 symlink 권한 오류 (개발 모드는 정상 동작)
+
+---
+
+## ✅ Phase 8c UI 변경 테스트 결과 (2026-02-05)
+
+| 테스트 항목 | 결과 | 비고 |
+|------------|------|------|
+| 1. 환영 화면 표시 | ✅ 통과 | 대화 미선택 시 WelcomeScreen 표시 |
+| 2. 예시 질문 클릭 | ✅ 통과 | 클릭 시 새 채팅 시작 |
+| 3. 날짜별 그룹핑 | ✅ 통과 | 오늘, 어제, 지난주 등 그룹 표시 |
+| 4. 대화 검색 | ✅ 통과 | 제목 기준 필터링 |
+| 5. 삭제 버튼 | ✅ 통과 | 호버 시 표시 |
+| 6. 언어 전환 | ✅ 통과 | 환영 메시지, 예시 질문 한/영 전환 |
+| 7. 입력창 자동 크기 | ✅ 통과 | 텍스트 양에 따라 높이 조절 |
+| 8. 반응형 (모바일) | ✅ 통과 | 사이드바 토글 정상 |
+| 9. 파일 업로드 | ✅ 통과 | 환영 화면에서 파일 첨부 가능 |
+| 10. 채팅 화면 전환 | ✅ 통과 | 대화 선택 시 Chat 컴포넌트 표시 |
+
+---
+
+## ✅ Phase 8b 관리 인프라 테스트 결과 (2026-02-03)
+
+| 테스트 항목 | 결과 | 비고 |
+|------------|------|------|
+| 1. 관리자 로그인 페이지 | ✅ 통과 | `/admin/login` |
+| 2. 관리자 로그인 API | ✅ 통과 | JWT 발급, 쿠키 설정 |
+| 3. 관리자 대시보드 | ✅ 통과 | `/admin` |
+| 4. 관리자 관리 페이지 | ✅ 통과 | 목록, 추가, 수정, 비밀번호 초기화 |
+| 5. 사용 통계 페이지 | ✅ 통과 | 실시간 통계, 차트 |
+| 6. 감사 로그 페이지 | ✅ 통과 | 필터, 페이지네이션, 상세 보기 |
+| 7. 에러 모니터링 페이지 | ✅ 통과 | 상태 관리, 상세 보기 |
+| 8. 관리자 프로필 페이지 | ✅ 통과 | `/admin/profile` |
+| 9. 감사 로그 기록 | ✅ 통과 | 로그인 시 자동 기록 |
+| 10. 포털 페이지 | ✅ 통과 | 기존 기능 정상 동작 |
+
+**관리자 계정 정보**:
+- Login ID: `superadmin`
+- Password: `ChangeMe123!` (Phase 9b 정책 준수)
+- 역할: `super_admin`
 
 ---
 
@@ -127,29 +324,19 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 
 ## 📌 다음에 해야 할 작업 (우선순위)
 
-### 우선순위 1: Phase 8b - 관리 인프라
+### 우선순위 1: 추가 기능
 - [ ] 사용자/그룹 관리 (User, Department, UserRole 추가)
-- [ ] 감사 로그 (AuditLog)
-- [ ] 사용 통계 대시보드 (UsageStats)
-- [ ] 에러 모니터링 (ErrorLog)
+- [ ] 통계 데이터 자동 집계 (Cron Job 또는 트리거)
+- [ ] 에러 캡처 자동화 (API 라우트 에러 핸들러)
 
-### 우선순위 2: Phase 8c - 디자인 명세 대기
-- [ ] 앱형 UI 변경 (디자인 명세 제공 후)
-
-### 우선순위 3: 기능 검토
-- [ ] **앱형 익명 사용자 사용 여부 검토**
-  - 앱형은 대화 히스토리가 계속 기록됨
-  - 익명 사용자에게 앱형 허용 시 보안/관리 이슈 검토 필요
-  - 심플형만 익명 허용 또는 앱형도 허용할지 결정
-
-### 우선순위 4: 프로덕션 준비
+### 우선순위 2: 프로덕션 준비
 - [ ] E2E 테스트 작성
 - [ ] 보안 검토
 - [ ] 성능 최적화
 - [ ] 에러 핸들링 강화
 - [ ] 로깅 시스템
 
-### 우선순위 5: 레거시 인증 연동 후 테스트
+### 우선순위 3: 레거시 인증 연동 후 테스트
 - [ ] **인증형 임베드 테스트** - `npx ts-node scripts/generate-embed-token.ts` 사용
 - [ ] 레거시 인증 시스템 연동 테스트
 
@@ -212,6 +399,10 @@ webapp-conversation/
 │       ├── admin/              # 관리자 컴포넌트
 │       ├── portal/             # 포털 컴포넌트
 │       ├── providers/          # Context Providers
+│       ├── welcome-screen/     # 환영 화면 컴포넌트 (Phase 8c)
+│       ├── example-questions/  # 예시 질문 컴포넌트 (Phase 8c)
+│       ├── sidebar/            # 사이드바 컴포넌트 (Phase 8c 개선)
+│       ├── chat/               # 채팅 컴포넌트 (Phase 8c 개선)
 │       ├── simple-chat-main.tsx  # 심플형 채팅 UI
 │       └── simple-chat.tsx     # 채팅 컴포넌트
 │
@@ -257,14 +448,20 @@ JWT_AUDIENCE=dgist-chatbot
 # 생성: openssl rand -base64 32
 ENCRYPTION_KEY=your-32-byte-base64-encoded-key
 
-# 인증 모드
-AUTH_MODE=mock  # 'mock' 또는 'legacy'
+# 인증 모드 (Phase 9a: mock 모드 제거됨)
+AUTH_MODE=legacy
 LEGACY_AUTH_API_URL=https://portal.dgist.ac.kr/api/auth/login
 
 # 레거시 (하위 호환용, Phase 7 이후 제거 가능)
 NEXT_PUBLIC_APP_ID=your-dify-app-id
 NEXT_PUBLIC_APP_KEY=your-dify-api-key
 NEXT_PUBLIC_API_URL=https://api.dify.ai/v1
+
+# 관리자 보안 설정 (Phase 9b)
+ADMIN_MAX_LOGIN_ATTEMPTS=5       # 최대 로그인 시도 횟수 (0=무제한)
+ADMIN_LOCKOUT_MINUTES=30         # 잠금 시간 (분)
+ADMIN_ALLOWED_IPS=               # IP 화이트리스트 (쉼표 구분, 빈값=모든 IP 허용)
+                                 # 예: 192.168.1.0/24,10.0.0.5,203.0.113.0/24
 ```
 
 ### JWT 키 생성 방법
@@ -331,9 +528,10 @@ npm run start
 - **JWT 만료**: 1시간
 
 ### 익명 사용자 방식
-- **sessionId**: localStorage에 UUID 저장
+- **sessionId**: sessionStorage에 UUID 저장 (Phase 9a 변경)
 - **자동 생성**: 최초 공개 챗봇 접속 시
-- **세션 복원**: sessionId + appId로 이전 대화 복원
+- **세션 복원**: 탭 유지 중에만 복원 (탭/브라우저 닫으면 새 세션)
+- **심플형만 허용**: 익명 사용자는 앱형 사용 불가
 
 ### Middleware 경로 규칙
 
@@ -370,6 +568,40 @@ npm run start
 - `role`, `content`, `files`, `feedback`, `tokenCount`
 - `createdAt`
 
+### Admin (관리자) - Phase 8b, 9b
+- `id`, `loginId`, `passwordHash`, `name`, `email`, `department`
+- `role` (super_admin, admin)
+- `isActive`, `lastLoginAt`, `lastLoginIp`
+- `loginAttempts`, `lockedUntil` (Phase 9b - 로그인 시도 제한)
+- `previousPasswordHash` (Phase 9b - 비밀번호 재사용 방지)
+- `createdAt`, `createdBy`, `updatedAt`, `updatedBy`
+
+### AuditLog (감사 로그) - Phase 8b
+- `id`
+- `actorType`, `actorId`, `actorLoginId`, `actorName`, `actorRole`
+- `action`, `entityType`, `entityId`
+- `changes`, `metadata`
+- `ipAddress`, `userAgent`, `requestPath`
+- `success`, `errorMessage`
+- `createdAt`
+
+### ErrorLog (에러 로그) - Phase 8b
+- `id`, `errorType`, `errorCode`, `message`, `stackTrace`
+- `source`, `requestPath`, `requestMethod`
+- `userEmpNo`, `adminId`, `sessionId`, `appId`
+- `ipAddress`, `userAgent`
+- `status` (new, investigating, resolved, ignored)
+- `resolvedAt`, `resolvedBy`, `resolution`
+- `createdAt`
+
+### DailyUsageStats (일별 통계) - Phase 8b
+- `id`, `date`, `appId`
+- `totalSessions`, `newSessions`, `authSessions`, `anonymousSessions`
+- `totalMessages`, `userMessages`, `assistantMessages`
+- `uniqueUsers`, `totalTokens`
+- `likeFeedbacks`, `dislikeFeedbacks`
+- `createdAt`, `updatedAt`
+
 ---
 
 ## 🔑 주요 기술적 결정 사항
@@ -390,7 +622,7 @@ npm run start
 
 ### 4. 익명 사용자 sessionId
 - **이유**: 쿠키 없이 세션 관리
-- **방식**: localStorage에 UUID 저장
+- **방식**: sessionStorage에 UUID 저장 (Phase 9a 변경 - 공용 PC 보안)
 - **폴백**: `crypto.randomUUID()` 미지원 환경 대응
 
 ### 5. 한글 이름 인코딩
@@ -423,18 +655,24 @@ npm run start
 
 ## 🧪 테스트
 
-### Mock 사용자
+### 관리자 계정 (Phase 9b)
 ```
-관리자: admin / admin123
-일반: user / user123
+슈퍼관리자: superadmin / ChangeMe123!
 ```
 
 ### 익명 접속 테스트
 1. 시크릿 모드로 `http://localhost:3000/` 접속
-2. 공개 챗봇 선택
-3. sessionId 생성 확인 (F12 > Application > Local Storage)
+2. 공개 챗봇 선택 (익명 사용자는 "채팅 시작" 버튼 → 바로 심플형)
+3. sessionId 생성 확인 (F12 > Application > Session Storage)
 4. 메시지 전송 및 응답 확인
-5. 새로고침 시 세션 복원 확인
+5. 같은 탭에서 새로고침 시 세션 복원 확인
+6. 탭 닫고 다시 열면 새 세션 생성 확인
+
+### 관리자 보안 테스트 (Phase 9b)
+1. 로그인 N회 실패 → 계정 잠금 확인
+2. 잠긴 계정으로 로그인 시도 → 잠금 메시지 표시
+3. superadmin이 잠금 해제 → 로그인 가능
+4. 비밀번호 정책 미충족 → 에러 메시지 확인
 
 ---
 
@@ -489,5 +727,7 @@ npm run start
 
 ---
 
-**마지막 업데이트**: 2026-02-03
-**Phase 8a 완료**: 다국어 지원, 레퍼런스 표시, 멀티모달 익명 지원
+**마지막 업데이트**: 2026-02-05
+**Phase 8c 완료**: 앱형 UI 변경 (ChatGPT 스타일 - WelcomeScreen, 날짜별 그룹핑, 검색 등)
+**Phase 9a 완료**: 포털 인증 정리, 익명 세션 sessionStorage 전환
+**Phase 9b 완료**: 관리자 보안 강화 (로그인 시도 제한, 비밀번호 정책, IP 화이트리스트)

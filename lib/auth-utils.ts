@@ -40,15 +40,23 @@ export async function getUserFromRequest(request: NextRequest): Promise<UserInfo
   }
 
   if (!token)
-    return null
+  { return null }
 
   const payload = await verifyToken(token)
   if (!payload)
-    return null
+  { return null }
 
   return {
     empNo: payload.empNo,
     loginId: payload.sub,
     name: payload.name,
   }
+}
+
+/**
+ * 요청에서 익명 세션 ID 추출
+ * x-anonymous-session 헤더에서 가져옴
+ */
+export function getAnonymousSessionId(request: NextRequest): string | null {
+  return request.headers.get('x-anonymous-session')
 }

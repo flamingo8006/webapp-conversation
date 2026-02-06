@@ -1,40 +1,56 @@
 'use client'
 import type { FC } from 'react'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import produce, { setAutoFreeze } from 'immer'
 import { useBoolean, useGetState } from 'ahooks'
 import useConversation from '@/hooks/use-conversation'
 import Toast from '@/app/components/base/toast'
 import Sidebar from '@/app/components/sidebar'
-import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
+import WelcomeScreen from '@/app/components/welcome-screen'
 import { fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
 import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
 import Chat from '@/app/components/chat'
-import { setLocaleOnClient } from '@/i18n/client'
 import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
 import Loading from '@/app/components/base/loading'
-import { replaceVarWithValues, userInputsFormToPromptVariables } from '@/utils/prompt'
+import { replaceVarWithValues } from '@/utils/prompt'
 import AppUnavailable from '@/app/components/app-unavailable'
 import { API_KEY, APP_ID, APP_INFO, isShowPrompt, promptTemplate } from '@/config'
+import { useApp } from '@/hooks/use-app'
+import { useAuth } from '@/app/components/providers/auth-provider'
 import type { Annotation as AnnotationType } from '@/types/log'
 import { addFileInfos, sortAgentSorts } from '@/utils/tools'
+import { userInputsFormToPromptVariables } from '@/utils/prompt'
+import { getOrCreateSessionId } from '@/lib/session-manager'
 
 export interface IMainProps {
   params: any
-  appId?: string  // Multi-App 지원: 동적 앱 ID
+  appId?: string // Multi-App 지원: 동적 앱 ID
 }
 
 const Main: FC<IMainProps> = ({ appId: propAppId }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const media = useBreakpoints()
   const isMobile = media === MediaType.mobile
   // Multi-App: props로 전달된 appId 우선, 없으면 환경변수 사용
   const appId = propAppId || APP_ID
   const hasSetAppConfig = appId && API_KEY
+
+  // 사용자 정보 및 앱 다국어 정보
+  const { user } = useAuth()
+  const { app } = useApp()
+
+  // 현재 언어에 따른 앱 이름 선택
+  const displayAppName = (() => {
+    if (!app) { return APP_INFO?.title || '' }
+    if (i18n.language === 'ko') {
+      return app.nameKo || app.name || APP_INFO?.title || ''
+    }
+    return app.nameEn || app.nameKo || app.name || APP_INFO?.title || ''
+  })()
 
   /*
   * app info
@@ -45,6 +61,9 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
   const [inited, setInited] = useState<boolean>(false)
   // in mobile, show sidebar by click button
   const [isShowSidebar, { setTrue: showSidebar, setFalse: hideSidebar }] = useBoolean(false)
+  // Phase 8c: sidebar collapse state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const toggleSidebarCollapse = () => setIsSidebarCollapsed(prev => !prev)
   const [visionConfig, setVisionConfig] = useState<VisionSettings | undefined>({
     enabled: false,
     number_limits: 2,
@@ -54,8 +73,10 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
   const [fileConfig, setFileConfig] = useState<FileUpload | undefined>()
 
   useEffect(() => {
-    if (APP_INFO?.title) { document.title = `${APP_INFO.title} - Powered by Dify` }
-  }, [APP_INFO?.title])
+    if (displayAppName) {
+      document.title = `${displayAppName} - DGIST AI`
+    }
+  }, [displayAppName])
 
   // onData change thought (the produce obj). https://github.com/immerjs/immer/issues/576
   useEffect(() => {
@@ -87,6 +108,10 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
 
   const [conversationIdChangeBecauseOfNew, setConversationIdChangeBecauseOfNew, getConversationIdChangeBecauseOfNew] = useGetState(false)
   const [isChatStarted, { setTrue: setChatStarted, setFalse: setChatNotStarted }] = useBoolean(false)
+
+  // Check if we're on the welcome screen (no conversation selected or new conversation with no messages)
+  const isWelcomeScreen = !currConversationId || (isNewConversation && !isChatStarted)
+
   const handleStartChat = (inputs: Record<string, any>) => {
     createNewChat()
     setConversationIdChangeBecauseOfNew(true)
@@ -95,9 +120,19 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
     // parse variables in introduction
     setChatList(generateNewChatListWithOpenStatement('', inputs))
   }
+
+  // Handle message send from welcome screen
+  const handleWelcomeSend = (message: string, files?: VisionFile[]) => {
+    // Start a new chat
+    handleStartChat({})
+    // Then send the message
+    setTimeout(() => {
+      handleSend(message, files)
+    }, 100)
+  }
+
   const hasSetInputs = (() => {
     if (!isNewConversation) { return true }
-
     return isChatStarted
   })()
 
@@ -177,18 +212,8 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
   * chat info. chat is under conversation.
   */
   const [chatList, setChatList, getChatList] = useGetState<ChatItem[]>([])
-  const chatListDomRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    // scroll to bottom with page-level scrolling
-    if (chatListDomRef.current) {
-      setTimeout(() => {
-        chatListDomRef.current?.scrollIntoView({
-          behavior: 'auto',
-          block: 'end',
-        })
-      }, 50)
-    }
-  }, [chatList, currConversationId])
+  // Auto-scroll is now handled inside Chat component
+
   // user can not edit inputs if user had send message
   const canEditInputs = !chatList.some(item => item.isAnswer === false) && isNewConversation
   const createNewChat = () => {
@@ -365,6 +390,18 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
       return
     }
+
+    // 새 대화인 경우 첫 메시지 기반 임시 제목 설정
+    if (isNewConversation && conversationList.some(item => item.id === '-1')) {
+      const tempTitle = message.slice(0, 30) + (message.length > 30 ? '...' : '')
+      setConversationList(produce(conversationList, (draft) => {
+        const newConvIndex = draft.findIndex(item => item.id === '-1')
+        if (newConvIndex !== -1) {
+          draft[newConvIndex].name = tempTitle
+        }
+      }))
+    }
+
     const toServerInputs: Record<string, any> = {}
     if (currInputs) {
       Object.keys(currInputs).forEach((key) => {
@@ -466,13 +503,21 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
         if (hasError) { return }
 
         if (getConversationIdChangeBecauseOfNew()) {
-          const { data: allConversations }: any = await fetchConversations(appId)
-          const newItem: any = await generationConversationName(appId, allConversations[0].id)
+          try {
+            const { data: allConversations }: any = await fetchConversations(appId)
+            const newItem: any = await generationConversationName(allConversations[0].id)
 
-          const newAllConversations = produce(allConversations, (draft: any) => {
-            draft[0].name = newItem.name
-          })
-          setConversationList(newAllConversations as any)
+            const newAllConversations = produce(allConversations, (draft: any) => {
+              draft[0].name = newItem.name
+            })
+            setConversationList(newAllConversations as any)
+          }
+          catch (e) {
+            // 대화명 자동 생성 실패 시 무시 (기본 이름 사용)
+            console.warn('Failed to generate conversation name:', e)
+            const { data: allConversations }: any = await fetchConversations(appId)
+            setConversationList(allConversations as any)
+          }
         }
         resetNewConversationInputs()
         setChatNotStarted()
@@ -552,6 +597,10 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
         // Citation/Reference 데이터 처리
         if (messageEnd.metadata?.retriever_resources) {
           responseItem.citation = messageEnd.metadata.retriever_resources
+        }
+        // Phase 8c: suggested_questions 수집 (Dify에서 제공하는 경우)
+        if (messageEnd.metadata?.suggested_questions && messageEnd.metadata.suggested_questions.length > 0) {
+          responseItem.suggestedQuestions = messageEnd.metadata.suggested_questions
         }
         const newListWithAnswer = produce(
           getChatList().filter(item => item.id !== responseItem.id && item.id !== placeholderAnswerId),
@@ -644,6 +693,95 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
     notify({ type: 'success', message: t('common.api.success') })
   }
 
+  // Phase 8c: 대화 삭제 핸들러 (dbSessionId 우선, fallback: Dify conversation_id)
+  const handleDeleteConversation = async (id: string) => {
+    const conv = conversationList.find(c => c.id === id)
+    const targetId = conv?.dbSessionId || id
+    try {
+      const sessionId = getOrCreateSessionId()
+      const res = await fetch(`/api/apps/${appId}/sessions/${targetId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          ...(sessionId ? { 'X-Session-Id': sessionId } : {}),
+        },
+      })
+      // 성공 또는 404(DB에 없는 Dify 전용 대화)인 경우 목록에서 제거
+      if (res.ok || res.status === 404) {
+        setConversationList(conversationList.filter(item => item.id !== id))
+        if (currConversationId === id) {
+          setCurrConversationId('', appId)
+        }
+        notify({ type: 'success', message: t('app.sidebar.deleteSuccess') })
+      }
+    } catch (e) {
+      console.error('Failed to delete conversation:', e)
+    }
+  }
+
+  // Phase 8c: 대화 이름 변경 핸들러 (dbSessionId 우선, fallback: Dify conversation_id)
+  const handleRenameConversation = async (id: string, newName: string) => {
+    const conv = conversationList.find(c => c.id === id)
+    const targetId = conv?.dbSessionId || id
+    try {
+      const sessionId = getOrCreateSessionId()
+      const res = await fetch(`/api/apps/${appId}/sessions/${targetId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sessionId ? { 'X-Session-Id': sessionId } : {}),
+        },
+        body: JSON.stringify({ action: 'rename', customTitle: newName }),
+      })
+      if (res.ok) {
+        setConversationList(produce(conversationList, (draft) => {
+          const item = draft.find(c => c.id === id)
+          if (item) {
+            item.customTitle = newName
+            item.name = newName
+          }
+        }))
+        notify({ type: 'success', message: t('app.sidebar.renameSuccess') })
+      }
+    } catch (e) {
+      console.error('Failed to rename conversation:', e)
+    }
+  }
+
+  // Phase 8c: 대화 고정/해제 핸들러 (dbSessionId 우선, fallback: Dify conversation_id)
+  const handlePinConversation = async (id: string, isPinned: boolean) => {
+    const conv = conversationList.find(c => c.id === id)
+    const targetId = conv?.dbSessionId || id
+    try {
+      const sessionId = getOrCreateSessionId()
+      const res = await fetch(`/api/apps/${appId}/sessions/${targetId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sessionId ? { 'X-Session-Id': sessionId } : {}),
+        },
+        body: JSON.stringify({ action: 'pin', isPinned }),
+      })
+      if (res.ok) {
+        setConversationList(produce(conversationList, (draft) => {
+          const item = draft.find(c => c.id === id)
+          if (item) {
+            item.isPinned = isPinned
+            item.pinnedAt = isPinned ? new Date().toISOString() : undefined
+          }
+        }))
+        notify({
+          type: 'success',
+          message: isPinned ? t('app.sidebar.pinSuccess') : t('app.sidebar.unpinSuccess'),
+        })
+      }
+    } catch (e) {
+      console.error('Failed to pin conversation:', e)
+    }
+  }
+
   const renderSidebar = () => {
     if (!appId || !APP_INFO || !promptConfig) { return null }
     return (
@@ -651,7 +789,12 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
         list={conversationList}
         onCurrentIdChange={handleConversationIdChange}
         currentId={currConversationId}
-        copyRight={APP_INFO.copyright || APP_INFO.title}
+        onDeleteConversation={handleDeleteConversation}
+        onRenameConversation={handleRenameConversation}
+        onPinConversation={handlePinConversation}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={toggleSidebarCollapse}
+        userName={user?.name || user?.loginId}
       />
     )
   }
@@ -661,51 +804,50 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
   if (!appId || !APP_INFO || !promptConfig) { return <Loading type='app' /> }
 
   return (
-    <div className='bg-gray-100'>
-      <Header
-        title={APP_INFO.title}
-        isMobile={isMobile}
-        onShowSideBar={showSidebar}
-        onCreateNewChat={() => handleConversationIdChange('-1')}
-      />
-      <div className="flex rounded-t-2xl bg-white overflow-hidden">
-        {/* sidebar */}
-        {!isMobile && renderSidebar()}
-        {isMobile && isShowSidebar && (
-          <div className='fixed inset-0 z-50' style={{ backgroundColor: 'rgba(35, 56, 118, 0.2)' }} onClick={hideSidebar} >
-            <div className='inline-block' onClick={e => e.stopPropagation()}>
-              {renderSidebar()}
-            </div>
+    <div className='bg-background h-screen flex'>
+      {/* 이슈 1: 사이드바를 헤더와 같은 레벨에 배치 */}
+      {/* sidebar */}
+      {!isMobile && renderSidebar()}
+      {isMobile && isShowSidebar && (
+        <div className='fixed inset-0 z-50' style={{ backgroundColor: 'rgba(35, 56, 118, 0.2)' }} onClick={hideSidebar}>
+          <div className='h-full inline-block' onClick={e => e.stopPropagation()}>
+            {renderSidebar()}
           </div>
-        )}
-        {/* main */}
-        <div className='flex-grow flex flex-col h-[calc(100vh_-_3rem)] overflow-y-auto'>
-          <ConfigSence
-            conversationName={conversationName}
-            hasSetInputs={hasSetInputs}
-            isPublicVersion={isShowPrompt}
-            siteInfo={APP_INFO}
-            promptConfig={promptConfig}
-            onStartChat={handleStartChat}
-            canEditInputs={canEditInputs}
-            savedInputs={currInputs as Record<string, any>}
-            onInputsChange={setCurrInputs}
-          ></ConfigSence>
+        </div>
+      )}
 
-          {
-            hasSetInputs && (
-              <div className='relative grow pc:w-[794px] max-w-full mobile:w-full pb-[180px] mx-auto mb-3.5' ref={chatListDomRef}>
-                <Chat
-                  chatList={chatList}
-                  onSend={handleSend}
-                  onFeedback={handleFeedback}
-                  isResponding={isResponding}
-                  checkCanSend={checkCanSend}
-                  visionConfig={visionConfig}
-                  fileConfig={fileConfig}
-                />
-              </div>)
-          }
+      {/* Right panel: Header + Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header
+          title={displayAppName}
+          isMobile={isMobile}
+          onShowSideBar={showSidebar}
+          onCreateNewChat={() => handleConversationIdChange('-1')}
+        />
+        <div className='flex-1 overflow-hidden bg-muted/20'>
+          {/* Welcome Screen or Chat */}
+          {isWelcomeScreen
+            ? (
+              <WelcomeScreen
+                userName={user?.name}
+                onSend={handleWelcomeSend}
+                isResponding={isResponding}
+                visionConfig={visionConfig}
+                fileConfig={fileConfig}
+                suggestedQuestions={suggestedQuestions}
+              />
+            )
+            : (
+              <Chat
+                chatList={chatList}
+                onSend={handleSend}
+                onFeedback={handleFeedback}
+                isResponding={isResponding}
+                checkCanSend={checkCanSend}
+                visionConfig={visionConfig}
+                fileConfig={fileConfig}
+              />
+            )}
         </div>
       </div>
     </div>

@@ -1,50 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/jwt'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { requireAdminAuth } from '@/lib/admin-auth'
 import {
   getChatbotAppById,
   updateChatbotApp,
   deleteChatbotApp,
 } from '@/lib/repositories/chatbot-app'
 
-// JWT에서 사용자 정보 추출 헬퍼
-async function getUserFromRequest(request: NextRequest) {
-  let token = request.cookies.get('auth_token')?.value
-
-  if (!token) {
-    const authHeader = request.headers.get('Authorization')
-    if (authHeader?.startsWith('Bearer ')) {
-      token = authHeader.slice(7)
-    }
-  }
-
-  if (!token)
-    return null
-
-  return await verifyToken(token)
-}
-
-// 관리자 권한 확인
-async function requireAdmin(request: NextRequest) {
-  const user = await getUserFromRequest(request)
-
-  if (!user || user.role !== 'admin') {
-    return null
-  }
-
-  return user
+// 권한 체크 헬퍼: super_admin은 모든 챗봇, 일반 admin은 본인 챗봇만
+function canAccessApp(adminRole: string, adminId: string, appCreatedBy: string | null): boolean {
+  if (adminRole === 'super_admin') { return true }
+  return appCreatedBy === adminId
 }
 
 // GET - 챗봇 상세 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ appId: string }> }
+  { params }: { params: Promise<{ appId: string }> },
 ) {
-  const user = await requireAdmin(request)
+  const admin = await requireAdminAuth(request)
 
-  if (!user) {
+  if (!admin) {
     return NextResponse.json(
       { error: 'Forbidden: Admin access required' },
-      { status: 403 }
+      { status: 403 },
     )
   }
 
@@ -55,7 +34,15 @@ export async function GET(
     if (!app) {
       return NextResponse.json(
         { error: 'App not found' },
-        { status: 404 }
+        { status: 404 },
+      )
+    }
+
+    // 권한 체크
+    if (!canAccessApp(admin.role, admin.sub, app.createdBy)) {
+      return NextResponse.json(
+        { error: 'Forbidden: You can only access your own apps' },
+        { status: 403 },
       )
     }
 
@@ -65,7 +52,7 @@ export async function GET(
     console.error('Failed to get app:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -73,19 +60,37 @@ export async function GET(
 // PUT - 챗봇 수정
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ appId: string }> }
+  { params }: { params: Promise<{ appId: string }> },
 ) {
-  const user = await requireAdmin(request)
+  const admin = await requireAdminAuth(request)
 
-  if (!user) {
+  if (!admin) {
     return NextResponse.json(
       { error: 'Forbidden: Admin access required' },
-      { status: 403 }
+      { status: 403 },
     )
   }
 
   try {
     const { appId } = await params
+
+    // 기존 앱 조회하여 권한 체크
+    const existingApp = await getChatbotAppById(appId)
+    if (!existingApp) {
+      return NextResponse.json(
+        { error: 'App not found' },
+        { status: 404 },
+      )
+    }
+
+    // 권한 체크
+    if (!canAccessApp(admin.role, admin.sub, existingApp.createdBy)) {
+      return NextResponse.json(
+        { error: 'Forbidden: You can only modify your own apps' },
+        { status: 403 },
+      )
+    }
+
     const body = await request.json()
     const {
       name,
@@ -129,7 +134,7 @@ export async function PUT(
       requireAuth,
       allowAnonymous,
       maxAnonymousMsgs: parsedMaxAnonymousMsgs,
-      updatedBy: user.empNo,
+      updatedBy: admin.sub,
     })
 
     return NextResponse.json(app)
@@ -138,7 +143,7 @@ export async function PUT(
     console.error('Failed to update app:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -146,21 +151,38 @@ export async function PUT(
 // DELETE - 챗봇 삭제 (소프트 삭제)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ appId: string }> }
+  { params }: { params: Promise<{ appId: string }> },
 ) {
-  const user = await requireAdmin(request)
+  const admin = await requireAdminAuth(request)
 
-  if (!user) {
+  if (!admin) {
     return NextResponse.json(
       { error: 'Forbidden: Admin access required' },
-      { status: 403 }
+      { status: 403 },
     )
   }
 
   try {
     const { appId } = await params
 
-    await deleteChatbotApp(appId, user.empNo)
+    // 기존 앱 조회하여 권한 체크
+    const existingApp = await getChatbotAppById(appId)
+    if (!existingApp) {
+      return NextResponse.json(
+        { error: 'App not found' },
+        { status: 404 },
+      )
+    }
+
+    // 권한 체크
+    if (!canAccessApp(admin.role, admin.sub, existingApp.createdBy)) {
+      return NextResponse.json(
+        { error: 'Forbidden: You can only delete your own apps' },
+        { status: 403 },
+      )
+    }
+
+    await deleteChatbotApp(appId, admin.sub)
 
     return NextResponse.json({ success: true })
   }
@@ -168,7 +190,7 @@ export async function DELETE(
     console.error('Failed to delete app:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

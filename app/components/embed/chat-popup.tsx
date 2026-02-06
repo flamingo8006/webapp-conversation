@@ -73,7 +73,7 @@ export function ChatPopup({ isOpen, onClose, children, appName }: ChatPopupProps
   }, [size])
 
   const handleResizeMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (!isResizing) return
+    if (!isResizing) { return }
 
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY

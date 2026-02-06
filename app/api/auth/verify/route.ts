@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/jwt'
 
 export async function GET(request: NextRequest) {
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return NextResponse.json(
         { error: 'No token provided' },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (!payload) {
       return NextResponse.json(
         { error: 'Invalid token' },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
     console.error('Token verification error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

@@ -107,6 +107,7 @@ export interface MessageEnd {
   id: string
   metadata: {
     retriever_resources?: CitationItem[]
+    suggested_questions?: string[]
     annotation_reply: {
       id: string
       account: {

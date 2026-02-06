@@ -1,7 +1,8 @@
 /**
  * 클라이언트 세션 관리 (익명 사용자용)
- * localStorage 기반 sessionId(UUID) 생성 및 관리
+ * sessionStorage 기반 sessionId(UUID) 생성 및 관리
  * Phase 7: 익명 사용자 지원
+ * Phase 9a: localStorage → sessionStorage 변경 (탭/브라우저 닫으면 세션 삭제)
  */
 
 const SESSION_KEY = 'dgist_chatbot_session_id'
@@ -26,17 +27,18 @@ function generateUUID(): string {
 
 /**
  * sessionId 조회 또는 생성
- * localStorage에 저장된 sessionId를 반환하거나, 없으면 새로 생성
+ * sessionStorage에 저장된 sessionId를 반환하거나, 없으면 새로 생성
+ * Phase 9a: sessionStorage 사용 (탭/브라우저 닫으면 세션 삭제)
  */
 export function getOrCreateSessionId(): string {
   if (typeof window === 'undefined')
-    return ''
+  { return '' }
 
-  let sessionId = localStorage.getItem(SESSION_KEY)
+  let sessionId = sessionStorage.getItem(SESSION_KEY)
 
   if (!sessionId) {
     sessionId = generateUUID()
-    localStorage.setItem(SESSION_KEY, sessionId)
+    sessionStorage.setItem(SESSION_KEY, sessionId)
   }
 
   return sessionId
@@ -47,8 +49,8 @@ export function getOrCreateSessionId(): string {
  */
 export function getSessionId(): string | null {
   if (typeof window === 'undefined')
-    return null
-  return localStorage.getItem(SESSION_KEY)
+  { return null }
+  return sessionStorage.getItem(SESSION_KEY)
 }
 
 /**
@@ -57,8 +59,8 @@ export function getSessionId(): string | null {
  */
 export function clearSessionId(): void {
   if (typeof window === 'undefined')
-    return
-  localStorage.removeItem(SESSION_KEY)
+  { return }
+  sessionStorage.removeItem(SESSION_KEY)
 }
 
 /**
@@ -66,6 +68,6 @@ export function clearSessionId(): void {
  */
 export function setSessionId(sessionId: string): void {
   if (typeof window === 'undefined')
-    return
-  localStorage.setItem(SESSION_KEY, sessionId)
+  { return }
+  sessionStorage.setItem(SESSION_KEY, sessionId)
 }

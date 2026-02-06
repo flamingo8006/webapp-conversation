@@ -232,16 +232,26 @@ const handleStream = (
         buffer = lines[lines.length - 1]
       }
       catch (e) {
+        const errorMsg = e instanceof Error ? e.message : (e instanceof Response ? `HTTP Error ${e.status}` : String(e))
         onData('', false, {
           conversationId: undefined,
           messageId: '',
-          errorMessage: `${e}`,
+          errorMessage: errorMsg,
         })
         hasError = true
         onCompleted?.(true)
         return
       }
       if (!hasError) { read() }
+    }).catch((e) => {
+      // Handle stream read errors
+      const errorMsg = e instanceof Error ? e.message : (e instanceof Response ? `HTTP Error ${e.status}` : String(e))
+      onData('', false, {
+        conversationId: undefined,
+        messageId: '',
+        errorMessage: errorMsg,
+      })
+      onCompleted?.(true)
     })
   }
   read()
@@ -289,24 +299,21 @@ const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent }: I
           const resClone = res.clone()
           // Error handler
           if (!/^(2|3)\d{2}$/.test(res.status)) {
+            let errorMessage = `HTTP Error ${res.status}`
             try {
               const bodyJson = await res.json()
-              switch (res.status) {
-                case 401: {
-                  Toast.notify({ type: 'error', message: 'Invalid token' })
-                  return
-                }
-                default: {
-                  const errorMessage = bodyJson.error || bodyJson.message || 'Request failed'
-                  Toast.notify({ type: 'error', message: errorMessage })
-                }
-              }
+              errorMessage = bodyJson.error || bodyJson.message || errorMessage
             }
-            catch (e) {
-              Toast.notify({ type: 'error', message: `${e}` })
+            catch {
+              // JSON 파싱 실패 시 기본 메시지 사용
             }
 
-            return Promise.reject(resClone)
+            // 401은 조용히 처리 (토큰 만료 등)
+            if (res.status !== 401) {
+              Toast.notify({ type: 'error', message: errorMessage })
+            }
+            reject(new Error(errorMessage))
+            return
           }
 
           // handle delete api. Delete api not return content.
@@ -321,8 +328,14 @@ const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent }: I
           resolve(needAllResponseContent ? resClone : data)
         })
         .catch((err) => {
-          Toast.notify({ type: 'error', message: err })
-          reject(err)
+          // 네트워크 에러만 처리 (HTTP 에러는 위에서 처리됨)
+          if (err instanceof Error && err.message.startsWith('HTTP Error')) {
+            reject(err)
+            return
+          }
+          const errorMessage = err instanceof Error ? err.message : String(err)
+          Toast.notify({ type: 'error', message: errorMessage })
+          reject(new Error(errorMessage))
         })
     }),
   ])
@@ -422,8 +435,22 @@ export const ssePost = (
       }, onThought, onMessageEnd, onMessageReplace, onFile, onWorkflowStarted, onWorkflowFinished, onNodeStarted, onNodeFinished)
     })
     .catch((e) => {
-      Toast.notify({ type: 'error', message: e })
-      onError?.(e)
+      let errorMessage: string
+      if (e instanceof Error) {
+        errorMessage = e.message
+      }
+      else if (e instanceof Response) {
+        errorMessage = `HTTP Error ${e.status}: ${e.statusText}`
+      }
+      else if (typeof e === 'string') {
+        errorMessage = e
+      }
+      else {
+        errorMessage = 'Unknown error occurred'
+      }
+
+      Toast.notify({ type: 'error', message: errorMessage })
+      onError?.(errorMessage)
     })
 }
 

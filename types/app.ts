@@ -105,6 +105,13 @@ export interface ConversationItem {
   inputs: Record<string, any> | null
   introduction: string
   suggested_questions?: string[]
+  created_at?: number | string
+  updated_at?: number | string
+  // Phase 8c: 대화 목록 기능
+  dbSessionId?: string | null
+  customTitle?: string
+  isPinned?: boolean
+  pinnedAt?: string
 }
 
 export interface AppInfo {

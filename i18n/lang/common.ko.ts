@@ -17,6 +17,10 @@ const translation = {
     like: '좋아요',
     dislike: '싫어요',
     ok: '확인',
+    delete: '삭제',
+    rename: '이름 변경',
+    pin: '고정',
+    unpin: '고정 해제',
   },
   imageUploader: {
     uploadFromComputer: '컴퓨터에서 업로드',

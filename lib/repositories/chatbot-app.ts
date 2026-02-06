@@ -17,11 +17,12 @@ export interface ChatbotAppPublic {
   iconUrl: string | null
   isActive: boolean
   sortOrder: number
-  isPublic: boolean           // 공개 챗봇 여부
-  requireAuth: boolean        // 인증 필수 여부
-  allowAnonymous: boolean     // 익명 사용자 허용
-  maxAnonymousMsgs: number | null  // 익명 사용자 최대 메시지 수
+  isPublic: boolean // 공개 챗봇 여부
+  requireAuth: boolean // 인증 필수 여부
+  allowAnonymous: boolean // 익명 사용자 허용
+  maxAnonymousMsgs: number | null // 익명 사용자 최대 메시지 수
   createdAt: Date
+  createdBy: string | null // 생성자 ID (Phase 8b - 권한 관리)
 }
 
 // 서버 내부용 타입 (복호화된 apiKey 포함)
@@ -124,7 +125,7 @@ export async function getChatbotAppById(id: string): Promise<ChatbotAppPublic | 
   })
 
   if (!app)
-    return null
+  { return null }
 
   return toPublic(app)
 }
@@ -138,7 +139,7 @@ export async function getChatbotAppWithKey(id: string): Promise<ChatbotAppWithKe
   })
 
   if (!app)
-    return null
+  { return null }
 
   return {
     ...toPublic(app),
@@ -148,10 +149,14 @@ export async function getChatbotAppWithKey(id: string): Promise<ChatbotAppWithKe
 
 /**
  * 챗봇 앱 목록 조회 (API Key 제외 - 클라이언트 안전)
+ * @param createdBy - 특정 관리자가 생성한 챗봇만 조회 (null이면 전체)
  */
-export async function listChatbotApps(): Promise<ChatbotAppPublic[]> {
+export async function listChatbotApps(createdBy?: string | null): Promise<ChatbotAppPublic[]> {
   const apps = await prisma.chatbotApp.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      ...(createdBy ? { createdBy } : {}),
+    },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
   })
 
@@ -209,5 +214,6 @@ function toPublic(app: ChatbotApp): ChatbotAppPublic {
     allowAnonymous: app.allowAnonymous,
     maxAnonymousMsgs: app.maxAnonymousMsgs,
     createdAt: app.createdAt,
+    createdBy: app.createdBy,
   }
 }

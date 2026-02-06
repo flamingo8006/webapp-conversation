@@ -39,7 +39,7 @@ export function AppTable({ apps, onDelete }: AppTableProps) {
   const [publishingApp, setPublishingApp] = useState<AppConfig | null>(null)
 
   const handleDelete = async () => {
-    if (!deleteTarget) return
+    if (!deleteTarget) { return }
 
     setDeletingId(deleteTarget.id)
 
@@ -114,17 +114,19 @@ export function AppTable({ apps, onDelete }: AppTableProps) {
               <TableRow key={app.id}>
                 <TableCell>
                   <div className="flex items-center">
-                    {app.iconUrl ? (
-                      <img
-                        src={app.iconUrl}
-                        alt={app.name}
-                        className="w-10 h-10 rounded-lg mr-3"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold mr-3">
-                        {app.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    {app.iconUrl
+                      ? (
+                        <img
+                          src={app.iconUrl}
+                          alt={app.name}
+                          className="w-10 h-10 rounded-lg mr-3"
+                        />
+                      )
+                      : (
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold mr-3">
+                          {app.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                     <div>
                       <p className="font-medium">{app.name}</p>
                       <p className="text-xs text-muted-foreground">{app.difyAppId}</p>
@@ -138,15 +140,17 @@ export function AppTable({ apps, onDelete }: AppTableProps) {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
-                    {app.isActive ? (
-                      <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
-                        활성
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">
-                        비활성
-                      </Badge>
-                    )}
+                    {app.isActive
+                      ? (
+                        <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                          활성
+                        </Badge>
+                      )
+                      : (
+                        <Badge variant="secondary">
+                          비활성
+                        </Badge>
+                      )}
                     {app.isPublic && (
                       <Badge variant="default" className="bg-blue-100 text-blue-800 hover:bg-blue-100">
                         공개

@@ -1,17 +1,27 @@
+'use client'
+
 import type { ReactNode } from 'react'
-import { AdminSidebar } from '@/app/components/admin/sidebar'
+import { usePathname } from 'next/navigation'
+import { AdminAuthProvider } from '@/app/components/providers/admin-auth-provider'
+import { AdminLayoutContent } from '@/app/components/admin/admin-layout-content'
 
 interface AdminLayoutProps {
   children: ReactNode
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  const pathname = usePathname()
+
+  // 로그인 페이지는 레이아웃 없이 렌더링
+  if (pathname === '/admin/login') {
+    return <>{children}</>
+  }
+
   return (
-    <div className="flex h-screen bg-gray-100">
-      <AdminSidebar />
-      <main className="flex-1 overflow-y-auto">
+    <AdminAuthProvider>
+      <AdminLayoutContent>
         {children}
-      </main>
-    </div>
+      </AdminLayoutContent>
+    </AdminAuthProvider>
   )
 }

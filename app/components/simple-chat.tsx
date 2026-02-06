@@ -2,10 +2,11 @@
 import type { FC } from 'react'
 import React, { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Send, MessageCircle, AlertCircle } from 'lucide-react'
+import { Send, AlertCircle } from 'lucide-react'
 import Answer from './chat/answer'
 import Question from './chat/question'
 import type { FeedbackFunc } from './chat/type'
+import s from './chat/style.module.css'
 import type { ChatItem, VisionFile, VisionSettings } from '@/types/app'
 import { TransferMethod } from '@/types/app'
 import Toast from '@/app/components/base/toast'
@@ -39,6 +40,7 @@ export interface ISimpleChatProps {
   controlClearQuery?: number
   visionConfig?: VisionSettings
   fileConfig?: FileUpload
+  suggestedQuestions?: string[]
 }
 
 const SimpleChat: FC<ISimpleChatProps> = ({
@@ -53,6 +55,7 @@ const SimpleChat: FC<ISimpleChatProps> = ({
   controlClearQuery,
   visionConfig,
   fileConfig,
+  suggestedQuestions = [],
 }) => {
   const { t } = useTranslation()
   const { notify } = Toast
@@ -67,7 +70,7 @@ const SimpleChat: FC<ISimpleChatProps> = ({
   // 자동 스크롤
   const scrollToBottom = (instant = false) => {
     messagesEndRef.current?.scrollIntoView({
-      behavior: instant ? 'instant' : 'smooth'
+      behavior: instant ? 'instant' : 'smooth',
     })
   }
 
@@ -174,33 +177,59 @@ const SimpleChat: FC<ISimpleChatProps> = ({
       {/* 채팅 메시지 리스트 */}
       <ScrollArea className="flex-1 pr-2">
         <div className="space-y-4 sm:space-y-6 pb-3 sm:pb-4">
-          {chatList.length === 0 ? (
-            <div className="flex items-center justify-center h-[300px] px-4">
-              <div className="text-center">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
-                </div>
-                <p className="text-muted-foreground text-xs sm:text-sm">
-                  {t('app.chat.welcome')}
-                </p>
-              </div>
-            </div>
-          ) : (
-            chatList.map((item) => {
-              if (item.isAnswer) {
-                const isLast = item.id === chatList[chatList.length - 1].id
-                // 에러 메시지인 경우 특별 스타일 적용
-                if (item.isError) {
-                  return (
-                    <div key={item.id} className="flex justify-start mb-4">
-                      <Alert variant="destructive" className="max-w-[85%]">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{item.content}</AlertDescription>
-                      </Alert>
+          {chatList.map((item) => {
+            // 오프닝 스테이트먼트 - Answer 컴포넌트와 동일한 스타일
+            if (item.isOpeningStatement) {
+              const displaySuggestions = item.suggestedQuestions?.length
+                ? item.suggestedQuestions
+                : suggestedQuestions
+              return (
+                <div key={item.id}>
+                  <div className="flex items-start">
+                    <div className={`${s.answerIcon} w-10 h-10 shrink-0`} />
+                    <div className={`${s.answerWrap} max-w-[calc(100%-3rem)]`}>
+                      <div className={`${s.answer} relative text-sm text-gray-900`}>
+                        <div className="ml-2 py-3 px-4 bg-gray-100 rounded-tr-2xl rounded-b-2xl">
+                          <p className="text-sm text-gray-900">
+                            {item.content}
+                          </p>
+                          {/* Suggested Questions */}
+                          {displaySuggestions.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {displaySuggestions.slice(0, 4).map((question, index) => (
+                                <Button
+                                  key={index}
+                                  variant="outline"
+                                  className="h-auto py-1.5 px-3 text-xs text-primary hover:bg-primary/5 hover:border-primary/30 transition-colors"
+                                  onClick={() => suggestionClick(question)}
+                                >
+                                  {question}
+                                </Button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  )
-                }
-                return <Answer
+                  </div>
+                </div>
+              )
+            }
+            if (item.isAnswer) {
+              const isLast = item.id === chatList[chatList.length - 1].id
+              // 에러 메시지인 경우 특별 스타일 적용
+              if (item.isError) {
+                return (
+                  <div key={item.id} className="flex justify-start mb-4">
+                    <Alert variant="destructive" className="max-w-[85%]">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{item.content}</AlertDescription>
+                    </Alert>
+                  </div>
+                )
+              }
+              return (
+                <Answer
                   key={item.id}
                   item={item}
                   feedbackDisabled={feedbackDisabled}
@@ -208,18 +237,19 @@ const SimpleChat: FC<ISimpleChatProps> = ({
                   isResponding={isResponding && isLast}
                   suggestionClick={suggestionClick}
                 />
-              }
-              return (
-                <Question
-                  key={item.id}
-                  id={item.id}
-                  content={item.content}
-                  useCurrentUserAvatar={useCurrentUserAvatar}
-                  imgSrcs={(item.message_files && item.message_files?.length > 0) ? item.message_files.map(item => item.url) : []}
-                />
               )
-            })
-          )}
+            }
+            // 사용자 질문
+            return (
+              <Question
+                key={item.id}
+                id={item.id}
+                content={item.content}
+                useCurrentUserAvatar={useCurrentUserAvatar}
+                imgSrcs={(item.message_files && item.message_files?.length > 0) ? item.message_files.map(item => item.url) : []}
+              />
+            )
+          })}
           {/* 스크롤 앵커 */}
           <div ref={messagesEndRef} />
         </div>
@@ -270,7 +300,7 @@ const SimpleChat: FC<ISimpleChatProps> = ({
                 ref={textareaRef}
                 className={cn(
                   'min-h-[44px] max-h-[120px] border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 pt-2.5 pb-3 pr-20 sm:pr-24 text-sm',
-                  visionConfig?.enabled ? 'pl-12 sm:pl-14' : 'pl-3 sm:pl-4'
+                  visionConfig?.enabled ? 'pl-12 sm:pl-14' : 'pl-3 sm:pl-4',
                 )}
                 value={query}
                 onChange={handleContentChange}
@@ -295,7 +325,7 @@ const SimpleChat: FC<ISimpleChatProps> = ({
                           'w-7 h-7 sm:w-8 sm:h-8 rounded-lg',
                           query.trim() && !isResponding
                             ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl'
-                            : ''
+                            : '',
                         )}
                       >
                         <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -310,6 +340,9 @@ const SimpleChat: FC<ISimpleChatProps> = ({
               </div>
             </div>
           </div>
+          <p className="text-center text-xs text-muted-foreground mt-2 pb-1">
+            {t('app.chat.disclaimer')}
+          </p>
         </div>
       )}
     </div>

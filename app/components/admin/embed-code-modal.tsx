@@ -331,92 +331,96 @@ export function EmbedCodeModal({ app, isOpen, onClose }: EmbedCodeModalProps) {
         </DialogHeader>
 
         <div className="overflow-y-auto flex-1">
-          {!embedType ? (
+          {!embedType
+            ? (
             // 임베드 방법 선택
-            <div className="space-y-3">
-              <button
-                onClick={() => setEmbedType('fullscreen')}
-                className="w-full p-4 text-left border-2 border-border rounded-lg hover:border-primary hover:bg-accent transition-colors"
-              >
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                    <LayoutGrid className="w-6 h-6 text-blue-600" />
+              <div className="space-y-3">
+                <button
+                  onClick={() => setEmbedType('fullscreen')}
+                  className="w-full p-4 text-left border-2 border-border rounded-lg hover:border-primary hover:bg-accent transition-colors"
+                >
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                      <LayoutGrid className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">화면배치형</p>
+                      <p className="text-sm text-muted-foreground">
+                        웹페이지 영역에 챗봇을 iframe으로 배치합니다
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-foreground">화면배치형</p>
-                    <p className="text-sm text-muted-foreground">
-                      웹페이지 영역에 챗봇을 iframe으로 배치합니다
-                    </p>
-                  </div>
-                </div>
-              </button>
+                </button>
 
-              <button
-                onClick={() => setEmbedType('floating')}
-                className="w-full p-4 text-left border-2 border-border rounded-lg hover:border-primary hover:bg-accent transition-colors"
-              >
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
-                    <MessageSquare className="w-6 h-6 text-purple-600" />
+                <button
+                  onClick={() => setEmbedType('floating')}
+                  className="w-full p-4 text-left border-2 border-border rounded-lg hover:border-primary hover:bg-accent transition-colors"
+                >
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                      <MessageSquare className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">아이콘형 (플로팅 버튼)</p>
+                      <p className="text-sm text-muted-foreground">
+                        화면 우측 하단에 플로팅 버튼으로 표시합니다
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-foreground">아이콘형 (플로팅 버튼)</p>
-                    <p className="text-sm text-muted-foreground">
-                      화면 우측 하단에 플로팅 버튼으로 표시합니다
-                    </p>
-                  </div>
-                </div>
-              </button>
-            </div>
-          ) : (
-            // 임베드 코드 표시
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium">
-                    {embedType === 'fullscreen' ? '화면배치형' : '아이콘형 (플로팅 버튼)'} HTML 코드
-                  </p>
-                  <Button size="sm" onClick={handleCopy}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    복사
-                  </Button>
-                </div>
-                <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm">
-                  <code>{embedType === 'fullscreen' ? fullscreenCode : floatingCode}</code>
-                </pre>
+                </button>
               </div>
+            )
+            : (
+            // 임베드 코드 표시
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium">
+                      {embedType === 'fullscreen' ? '화면배치형' : '아이콘형 (플로팅 버튼)'} HTML 코드
+                    </p>
+                    <Button size="sm" onClick={handleCopy}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      복사
+                    </Button>
+                  </div>
+                  <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm">
+                    <code>{embedType === 'fullscreen' ? fullscreenCode : floatingCode}</code>
+                  </pre>
+                </div>
 
-              {/* 사용 안내 */}
-              {isPublicAnonymous ? (
-                <Alert className="bg-green-50 border-green-200">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertTitle className="text-green-800">공개 챗봇 - 바로 사용 가능</AlertTitle>
-                  <AlertDescription className="text-green-700">
-                    <ul className="list-disc list-inside space-y-1 mt-2">
-                      <li>이 챗봇은 공개 설정되어 있어 토큰 없이 사용 가능합니다</li>
-                      <li>코드를 복사하여 웹페이지에 바로 붙여넣으세요</li>
-                      {(app?.maxAnonymousMsgs ?? 0) > 0 && (
-                        <li>익명 사용자당 최대 {app?.maxAnonymousMsgs}개 메시지 제한</li>
-                      )}
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <Alert className="bg-yellow-50 border-yellow-200">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <AlertTitle className="text-yellow-800">인증 필요 - JWT 토큰 설정 필요</AlertTitle>
-                  <AlertDescription className="text-yellow-700">
-                    <ul className="list-disc list-inside space-y-1 mt-2">
-                      <li>JWT 토큰을 실제 값으로 교체해야 합니다</li>
-                      <li>토큰은 서버에서 생성하여 사용하는 것을 권장합니다</li>
-                      <li>토큰 유효 기간은 1시간입니다</li>
-                      <li>자세한 내용은 개발 문서를 참고하세요</li>
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          )}
+                {/* 사용 안내 */}
+                {isPublicAnonymous
+                  ? (
+                    <Alert className="bg-green-50 border-green-200">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertTitle className="text-green-800">공개 챗봇 - 바로 사용 가능</AlertTitle>
+                      <AlertDescription className="text-green-700">
+                        <ul className="list-disc list-inside space-y-1 mt-2">
+                          <li>이 챗봇은 공개 설정되어 있어 토큰 없이 사용 가능합니다</li>
+                          <li>코드를 복사하여 웹페이지에 바로 붙여넣으세요</li>
+                          {(app?.maxAnonymousMsgs ?? 0) > 0 && (
+                            <li>익명 사용자당 최대 {app?.maxAnonymousMsgs}개 메시지 제한</li>
+                          )}
+                        </ul>
+                      </AlertDescription>
+                    </Alert>
+                  )
+                  : (
+                    <Alert className="bg-yellow-50 border-yellow-200">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      <AlertTitle className="text-yellow-800">인증 필요 - JWT 토큰 설정 필요</AlertTitle>
+                      <AlertDescription className="text-yellow-700">
+                        <ul className="list-disc list-inside space-y-1 mt-2">
+                          <li>JWT 토큰을 실제 값으로 교체해야 합니다</li>
+                          <li>토큰은 서버에서 생성하여 사용하는 것을 권장합니다</li>
+                          <li>토큰 유효 기간은 1시간입니다</li>
+                          <li>자세한 내용은 개발 문서를 참고하세요</li>
+                        </ul>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+              </div>
+            )}
         </div>
       </DialogContent>
     </Dialog>

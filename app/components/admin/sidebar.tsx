@@ -2,19 +2,30 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Bot, Home, LogOut } from 'lucide-react'
-import { useAuth } from '@/hooks/use-auth'
+import { LayoutDashboard, Bot, Home, LogOut, Users, FileText, AlertTriangle, BarChart3, User, Activity } from 'lucide-react'
+import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 
-const navigation = [
-  { name: '대시보드', href: '/admin', icon: LayoutDashboard },
-  { name: '챗봇 관리', href: '/admin/apps', icon: Bot },
-]
-
 export function AdminSidebar() {
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { admin, logout, isSuperAdmin } = useAdminAuth()
+
+  const navigation = [
+    { name: '대시보드', href: '/admin', icon: LayoutDashboard },
+    { name: '챗봇 관리', href: '/admin/apps', icon: Bot },
+    { name: '활동 내역', href: '/admin/activity', icon: Activity },
+    { name: '사용 통계', href: '/admin/stats', icon: BarChart3 },
+    // 슈퍼관리자 전용
+    ...(isSuperAdmin
+      ? [
+        { name: '관리자 관리', href: '/admin/admins', icon: Users },
+        { name: '감사 로그', href: '/admin/audit-logs', icon: FileText },
+        { name: '에러 모니터링', href: '/admin/errors', icon: AlertTriangle },
+      ]
+      : []),
+    { name: '내 정보', href: '/admin/profile', icon: User },
+  ]
 
   return (
     <div className="flex flex-col w-64 bg-slate-900 text-white h-screen">
@@ -24,9 +35,9 @@ export function AdminSidebar() {
       </div>
 
       {/* 네비게이션 */}
-      <nav className="flex-1 px-4 py-6 space-y-1">
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {navigation.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
           const Icon = item.icon
           return (
             <Link
@@ -47,12 +58,12 @@ export function AdminSidebar() {
 
       {/* 하단 사용자 정보 */}
       <div className="p-4 border-t border-slate-800">
-        {user && (
+        {admin && (
           <div className="mb-4 px-2">
-            <p className="text-sm font-medium text-white">{user.name}</p>
-            <p className="text-xs text-slate-400">{user.loginId}</p>
+            <p className="text-sm font-medium text-white">{admin.name}</p>
+            <p className="text-xs text-slate-400">{admin.loginId}</p>
             <p className="text-xs text-slate-500 mt-1">
-              {user.role === 'admin' ? '관리자' : '사용자'}
+              {admin.role === 'super_admin' ? '슈퍼관리자' : '관리자'}
             </p>
           </div>
         )}

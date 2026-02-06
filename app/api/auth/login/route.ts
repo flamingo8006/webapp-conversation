@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { authenticateWithLegacy } from '@/lib/legacy-auth'
 import { signToken } from '@/lib/jwt'
 
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
     if (!loginId || !password) {
       return NextResponse.json(
         { error: 'loginId and password are required' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (!authResult.success) {
       return NextResponse.json(
         { error: authResult.error || 'Authentication failed' },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     console.error('Login error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
