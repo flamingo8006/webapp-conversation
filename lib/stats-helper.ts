@@ -3,6 +3,7 @@
  * fire-and-forget 패턴: await 없이 호출, 실패해도 채팅 흐름에 영향 없음
  */
 
+import { logger } from '@/lib/logger'
 import { usageStatsRepository } from '@/lib/repositories/usage-stats'
 
 /**
@@ -20,7 +21,7 @@ export function trackMessageStats(
     assistantMessages: role === 'assistant' ? 1 : 0,
     totalTokens: tokenCount || 0,
   }).catch((err) => {
-    console.warn('Stats increment failed (non-fatal):', err)
+    logger.warn('Stats increment failed (non-fatal)', { error: err })
   })
 }
 
@@ -37,6 +38,6 @@ export function trackFeedbackStats(
     likeFeedbacks: rating === 'like' ? 1 : 0,
     dislikeFeedbacks: rating === 'dislike' ? 1 : 0,
   }).catch((err) => {
-    console.warn('Feedback stats increment failed (non-fatal):', err)
+    logger.warn('Feedback stats increment failed (non-fatal)', { error: err })
   })
 }

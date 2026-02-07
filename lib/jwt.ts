@@ -1,5 +1,6 @@
 import { importPKCS8, importSPKI, jwtVerify, SignJWT } from 'jose'
 import type { NextRequest } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // JWT Payload 타입
 export interface JWTPayload {
@@ -37,7 +38,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
     return payload as unknown as JWTPayload
   }
   catch (error) {
-    console.error('JWT verification failed:', error)
+    logger.error('JWT verification failed', { error })
     return null
   }
 }

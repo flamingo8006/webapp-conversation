@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { errorLogRepository, type ErrorLogCreateInput } from './repositories/error-log'
 
 class ErrorCapture {
@@ -25,9 +26,8 @@ class ErrorCapture {
       })
     }
     catch (captureError) {
-      // 에러 캡처 실패는 콘솔에만 기록
-      console.error('Failed to capture error:', captureError)
-      console.error('Original error:', error)
+      // 에러 캡처 실패는 로거에만 기록
+      logger.error('Failed to capture error', { error: captureError, originalError: error })
     }
   }
 
@@ -70,7 +70,7 @@ class ErrorCapture {
       })
     }
     catch (captureError) {
-      console.error('Failed to capture client error:', captureError)
+      logger.error('Failed to capture client error', { error: captureError })
     }
   }
 }

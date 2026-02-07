@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger'
+
 interface LegacyAuthResponse {
   success: boolean
   data?: {
@@ -84,7 +86,7 @@ export async function authenticateWithLegacy(
     }
   }
   catch (error) {
-    console.error('Legacy auth error:', error)
+    logger.error('Legacy auth error', { error })
     return {
       success: false,
       error: 'Authentication service unavailable',

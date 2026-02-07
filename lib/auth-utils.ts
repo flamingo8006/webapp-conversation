@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { verifyToken } from '@/lib/jwt'
+import { logger } from '@/lib/logger'
 
 export interface UserInfo {
   empNo: string
@@ -25,7 +26,7 @@ export async function getUserFromRequest(request: NextRequest): Promise<UserInfo
       return { empNo, loginId, name }
     }
     catch (error) {
-      console.error('Failed to decode user name:', error)
+      logger.error('Failed to decode user name', { error })
     }
   }
 

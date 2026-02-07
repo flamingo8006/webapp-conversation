@@ -1,5 +1,6 @@
 import { importPKCS8, importSPKI, jwtVerify, SignJWT } from 'jose'
 import type { NextRequest } from 'next/server'
+import { logger } from '@/lib/logger'
 import { adminRepository, type AdminPublic, type AdminWithPassword } from './repositories/admin'
 
 // 관리자 JWT Payload 타입
@@ -79,7 +80,7 @@ export async function verifyAdminToken(token: string): Promise<AdminJWTPayload |
     return payload as unknown as AdminJWTPayload
   }
   catch (error) {
-    console.error('Admin JWT verification failed:', error)
+    logger.error('Admin JWT verification failed', { error })
     return null
   }
 }

@@ -1,5 +1,6 @@
 import type { ChatbotApp } from '@prisma/client'
 import { decrypt, encrypt } from '@/lib/encryption'
+import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/prisma'
 
 // 클라이언트에 노출되는 타입 (apiKey 제외)
@@ -147,7 +148,7 @@ export async function getChatbotAppWithKey(id: string): Promise<ChatbotAppWithKe
     }
   }
   catch (error) {
-    console.error(`Failed to decrypt API key for app ${id}:`, error)
+    logger.error(`Failed to decrypt API key for app ${id}`, { error, appId: id })
     return null
   }
 }
