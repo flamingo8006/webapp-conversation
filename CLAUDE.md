@@ -212,6 +212,22 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
   - SimpleChat에 suggestedQuestions props 추가
   - 초기 화면에 2x2 그리드 예시 질문 카드 표시
 
+### Phase 8c-3: 디자인 개선 + 버그 수정 ✅
+- [x] 앱형 레이아웃: [사이드바 | 헤더+채팅] 구조
+- [x] 사이드바 접힘 시 대화내역 숨김 (아이콘만 표시)
+- [x] 채팅 입력창 하단 고정 (flex column 레이아웃)
+- [x] 대화 제목 15자 초과 시 `...` 처리 + 호버 시 전체 제목 tooltip
+- [x] 채팅 영역 max-w-3xl 중앙 배치
+- [x] 고정된 대화 앞에 핀 아이콘 표시 (고정됨 그룹 레이블 숨김)
+- [x] 심플형/앱형 면책 문구 추가
+- [x] SSE 파서 버퍼 기반으로 변경 (청크 경계 버그 수정)
+- [x] Dify + DB 세션 머지 (conversations API)
+- [x] 삭제된 대화 Dify 목록에서 필터링
+- [x] Middleware: 원본 request headers 보존 (Cookie 유실 방지)
+- [x] Middleware: JWT 토큰 우선 확인 (X-Session-Id보다 먼저)
+- [x] 대화 삭제 후 WelcomeScreen 전환 (`setCurrConversationId('-1')`)
+- [x] 사용자 브라우저 테스트 완료 (2026-02-07)
+
 ### Phase 10: 에러 핸들링 강화 + 코드 품질 개선 ✅ (10-2 제외)
 - [x] Phase 10-1: Next.js Error Boundary 추가 (새 파일 6개)
 - [x] Phase 10-3: `any` 타입 제거 (TypeScript 강화, `types/dify.ts` 생성)
@@ -239,9 +255,9 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 
 ---
 
-## 🔄 현재 진행 중인 작업
+## 🔄 현재 상태
 
-**상태**: Phase 10~12 완료, Phase 13 계획 수립 완료 (배포 전 진행 예정)
+**상태**: Phase 1~12 + 8c-3 모두 완료, Phase 13 계획 수립 완료 (배포 전 진행 예정)
 
 **상세 계획서**:
 - [`docs/phase10-plan.md`](docs/phase10-plan.md) - 에러 핸들링 강화
@@ -249,57 +265,19 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 - [`docs/phase12-plan.md`](docs/phase12-plan.md) - 구조화된 로깅 시스템
 - [`docs/phase13-plan.md`](docs/phase13-plan.md) - 보안 검토 (배포 전 진행)
 
-### Phase 12 작업 목록 (2026-02-07)
+**주요 커밋 이력**:
+- `cdfb072` Phase 8b/8c/9a/9b 완료
+- `a701ef0` Phase 10~14 원격 브랜치 머지
+- `33cc92c` 대화 삭제 후 fetchChatList 런타임 에러 수정
+- `73c6c0d` Middleware 헤더 보존 + 세션 관리 버그 수정
 
-| Phase | 작업 | 위험도 | 상태 | 커밋 |
-|-------|------|--------|------|------|
-| 12-1 | 로거 모듈 생성 (`lib/logger.ts`) | 매우 낮음 | ✅ 완료 | `e292941` |
-| 12-2 | API 라우트에 로거 적용 (34개 파일, 46개 교체) | 낮음 | ✅ 완료 | `1eb065c` |
-| 12-3 | 라이브러리에 로거 적용 (7개 파일, 11개 교체) | 낮음 | ✅ 완료 | `c3b5b70` |
-| 12-4 | 미들웨어에 Request ID 추가 | 낮음 | ✅ 완료 | `30100f3` |
-
-### Phase 11 작업 목록 (2026-02-07)
-
-| Phase | 작업 | 위험도 | 상태 | 커밋 |
-|-------|------|--------|------|------|
-| 11-1 | 통계 데이터 자동 집계 (메시지 전송 시 DailyUsageStats 증분) | 낮음 | ✅ 완료 | `0ac4ea2` |
-| 11-2 | 에러 캡처 자동화 (31개 API 파일, 41개 catch 블록) | 낮음 | ✅ 완료 | `3b4ca58` |
-
-### Phase 10 작업 목록 (2026-02-07)
-
-| Phase | 작업 | 위험도 | 상태 | 커밋 |
-|-------|------|--------|------|------|
-| 10-1 | Next.js Error Boundary 추가 (새 파일 6개) | 매우 낮음 | ✅ 완료 | `757a301` |
-| 10-2 | API 응답 포맷 통일 | 높음 | **추후 진행** | - |
-| 10-3 | `any` 타입 제거 (TypeScript 강화) | 낮음 | ✅ 완료 | `bdb6def` |
-| 10-4 | 입력값 검증 추가 | 낮음~중간 | ✅ 완료 | `b3b4c2b` |
-| 10-5 | Repository 에러 핸들링 보강 | 낮음 | ✅ 완료 | `428624d` |
-
-**Git 전략**: 각 Phase를 개별 커밋으로 분리 → 문제 시 `git revert <커밋해시>`로 특정 작업만 롤백
+**알려진 버그**:
+- Windows에서 Next.js standalone 빌드 시 symlink 권한 오류 (개발 모드는 정상 동작)
 
 **Phase 10-2 보류 사유**:
 - 프론트/백엔드 응답 구조 동시 수정 필요
 - 수동 브라우저 테스트 없이 검증 불가
 - 선행 조건: 로컬 개발 환경 + E2E 테스트
-
-### Phase 8c-3 (대기: 사용자 테스트 필요)
-
-Phase 8c-3 디자인 개선 + 버그 수정은 코드 작업 완료 상태이나, 사용자 브라우저 테스트가 필요:
-1. 서버 시작 (`pnpm dev`) - `.next` 캐시 이미 삭제됨
-2. 시크릿 모드에서 로그인 후 앱형 채팅 접속
-3. 고정/이름변경/삭제 3개 기능 사용자 테스트
-4. 문제 발생 시 브라우저 콘솔(F12) 에러 확인
-- Playwright 자동 테스트에서는 고정/이름변경/삭제 모두 정상 동작 확인됨
-
-**이전 완료 작업**:
-- ✅ Phase 8c-3 코드 작업 (2026-02-06~07)
-- ✅ Phase 8c-2: 앱형/심플형 채팅 UI 개선 (2026-02-06)
-- ✅ Phase 8c: 앱형 UI 변경 (2026-02-05)
-- ✅ Phase 9a: 포털 인증 정리 (2026-02-04)
-- ✅ Phase 9b: 관리자 보안 강화 (2026-02-04)
-
-**알려진 버그**:
-- Windows에서 Next.js standalone 빌드 시 symlink 권한 오류 (개발 모드는 정상 동작)
 
 ---
 
@@ -413,9 +391,6 @@ Phase 8c-3 디자인 개선 + 버그 수정은 코드 작업 완료 상태이나
 ### 우선순위 3: 레거시 인증 연동 후 테스트
 - [ ] **인증형 임베드 테스트** - `npx ts-node scripts/generate-embed-token.ts` 사용
 - [ ] 레거시 인증 시스템 연동 테스트
-
-### 데스크톱 환경 필요
-- [ ] Phase 8c-3 사용자 테스트 (브라우저에서 고정/이름변경/삭제 확인)
 
 ---
 
@@ -638,6 +613,7 @@ npm run start
 - `isAnonymous`, `sessionId` (Phase 7 - 익명 사용자)
 - `userId`, `userLoginId`, `userName` (인증 사용자)
 - `appId`, `difyConversationId`, `title`
+- `customTitle`, `isPinned`, `pinnedAt` (Phase 8c-2 - 대화 관리)
 - `isActive`, `lastMessageAt`, `createdAt`, `updatedAt`
 
 ### ChatMessage (채팅 메시지)
@@ -805,10 +781,8 @@ npm run start
 ---
 
 **마지막 업데이트**: 2026-02-07
-**Phase 13 계획**: 보안 검토 (기능 개발 완료 후 배포 전 진행 예정)
+**Phase 8c-3 완료**: 사이드바 고정/이름변경/삭제 + Middleware 버그 수정 (사용자 테스트 완료)
 **Phase 12 완료**: 구조화된 로깅 시스템 (로거 모듈 + 41개 파일 적용 + Request ID)
 **Phase 11 완료**: 통계 자동 집계 + 에러 캡처 자동화 (31개 API 파일)
 **Phase 10 완료**: 에러 핸들링 강화 + 코드 품질 개선 (10-2 추후 진행)
-**Phase 8c 완료**: 앱형 UI 변경 (ChatGPT 스타일 - WelcomeScreen, 날짜별 그룹핑, 검색 등)
-**Phase 9a 완료**: 포털 인증 정리, 익명 세션 sessionStorage 전환
-**Phase 9b 완료**: 관리자 보안 강화 (로그인 시도 제한, 비밀번호 정책, IP 화이트리스트)
+**다음 단계**: Phase 13 보안 검토 (배포 전 진행 예정)
