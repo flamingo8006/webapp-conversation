@@ -241,9 +241,13 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 
 ## 🔄 현재 진행 중인 작업
 
-**상태**: Phase 12 (구조화된 로깅 시스템) **완료**
+**상태**: Phase 10~12 완료, Phase 13 계획 수립 완료 (배포 전 진행 예정)
 
-**상세 계획서**: [`docs/phase12-plan.md`](docs/phase12-plan.md)
+**상세 계획서**:
+- [`docs/phase10-plan.md`](docs/phase10-plan.md) - 에러 핸들링 강화
+- [`docs/phase11-plan.md`](docs/phase11-plan.md) - 통계 자동 집계 + 에러 캡처
+- [`docs/phase12-plan.md`](docs/phase12-plan.md) - 구조화된 로깅 시스템
+- [`docs/phase13-plan.md`](docs/phase13-plan.md) - 보안 검토 (배포 전 진행)
 
 ### Phase 12 작업 목록 (2026-02-07)
 
@@ -390,20 +394,28 @@ Phase 8c-3 디자인 개선 + 버그 수정은 코드 작업 완료 상태이나
 - [x] Phase 12-4: 미들웨어에 Request ID 추가 → `30100f3`
 
 ### 우선순위 1: 추가 기능
-- [ ] 사용자/그룹 관리 (User, Department, UserRole 추가)
+- [ ] 사용자/그룹 관리 (User, Department, UserRole 추가) - 레거시 시스템 구조 확인 후
 - [x] 통계 데이터 자동 집계 → Phase 11-1 완료
 - [x] 에러 캡처 자동화 → Phase 11-2 완료
 
-### 우선순위 2: 프로덕션 준비
-- [ ] E2E 테스트 작성
-- [ ] 보안 검토
-- [ ] 성능 최적화
+### 우선순위 2: 프로덕션 배포 전 (기능 개발 완료 후 진행)
+- [ ] Phase 13: 보안 검토 및 취약점 수정 → [`docs/phase13-plan.md`](docs/phase13-plan.md)
+  - Embed 토큰 API 인증 (Critical)
+  - 보안 헤더 추가 (Critical)
+  - 입력값 검증 강화 5건 (High~Low)
+  - IP 스푸핑 완화, CSRF, Rate Limiting, Dify URL 검증 (추후)
+- [ ] Phase 10-2: API 응답 포맷 통일 (브라우저 테스트 필수)
+- [ ] E2E 테스트 작성 (Playwright)
+- [ ] 성능 최적화 (DB 쿼리, 번들 사이즈)
 - [x] 에러 핸들링 강화 → Phase 10 완료
 - [x] 로깅 시스템 → Phase 12 완료
 
 ### 우선순위 3: 레거시 인증 연동 후 테스트
 - [ ] **인증형 임베드 테스트** - `npx ts-node scripts/generate-embed-token.ts` 사용
 - [ ] 레거시 인증 시스템 연동 테스트
+
+### 데스크톱 환경 필요
+- [ ] Phase 8c-3 사용자 테스트 (브라우저에서 고정/이름변경/삭제 확인)
 
 ---
 
@@ -793,6 +805,7 @@ npm run start
 ---
 
 **마지막 업데이트**: 2026-02-07
+**Phase 13 계획**: 보안 검토 (기능 개발 완료 후 배포 전 진행 예정)
 **Phase 12 완료**: 구조화된 로깅 시스템 (로거 모듈 + 41개 파일 적용 + Request ID)
 **Phase 11 완료**: 통계 자동 집계 + 에러 캡처 자동화 (31개 API 파일)
 **Phase 10 완료**: 에러 핸들링 강화 + 코드 품질 개선 (10-2 추후 진행)
