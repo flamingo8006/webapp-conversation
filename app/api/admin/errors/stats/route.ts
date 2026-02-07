@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { requireSuperAdmin } from '@/lib/admin-auth'
 import { errorLogRepository } from '@/lib/repositories/error-log'
+import { parsePositiveInt } from '@/lib/validation'
 
 // 에러 통계 조회 (슈퍼관리자 전용)
 export async function GET(request: NextRequest) {
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const days = Number.parseInt(searchParams.get('days') || '7')
+    const days = parsePositiveInt(searchParams.get('days'), 7)
 
     const [stats, errorTypes] = await Promise.all([
       errorLogRepository.getStats(days),

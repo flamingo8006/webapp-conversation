@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { requireSuperAdmin } from '@/lib/admin-auth'
 import { errorLogRepository, type ErrorStatus } from '@/lib/repositories/error-log'
+import { parsePositiveInt } from '@/lib/validation'
 
 // 에러 로그 목록 조회 (슈퍼관리자 전용)
 export async function GET(request: NextRequest) {
@@ -28,8 +29,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 페이지네이션
-    const page = Number.parseInt(searchParams.get('page') || '1')
-    const limit = Number.parseInt(searchParams.get('limit') || '50')
+    const page = parsePositiveInt(searchParams.get('page'), 1)
+    const limit = parsePositiveInt(searchParams.get('limit'), 50)
 
     const result = await errorLogRepository.list({ filter, page, limit })
 

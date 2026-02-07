@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { requireAdminAuth } from '@/lib/admin-auth'
 import { usageStatsRepository } from '@/lib/repositories/usage-stats'
+import { parsePositiveInt } from '@/lib/validation'
 
 // 통계 개요 조회
 // super_admin: 전체 통계
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const days = Number.parseInt(searchParams.get('days') || '7')
+    const days = parsePositiveInt(searchParams.get('days'), 7)
 
     // super_admin은 전체, 일반 admin은 본인 앱만
     const createdBy = admin.role === 'super_admin' ? null : admin.sub

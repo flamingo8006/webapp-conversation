@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { requireAdminAuth } from '@/lib/admin-auth'
 import prisma from '@/lib/prisma'
+import { parsePositiveInt } from '@/lib/validation'
 
 // 활동 내역 조회
 // super_admin: 전체 활동
@@ -23,8 +24,8 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     const userId = searchParams.get('userId') || undefined
     const userName = searchParams.get('userName') || undefined
-    const page = Number.parseInt(searchParams.get('page') || '1')
-    const limit = Math.min(Number.parseInt(searchParams.get('limit') || '50'), 100)
+    const page = parsePositiveInt(searchParams.get('page'), 1)
+    const limit = Math.min(parsePositiveInt(searchParams.get('limit'), 50), 100)
 
     // 기본 기간: 최근 7일
     const defaultStartDate = new Date()
