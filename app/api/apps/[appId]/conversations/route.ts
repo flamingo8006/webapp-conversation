@@ -4,6 +4,7 @@ import { ChatClient } from 'dify-client'
 import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
 import { getSessionsByAppAndUser } from '@/lib/repositories/chat-session'
+import type { DifyConversation, DifyConversationsResponse } from '@/types/dify'
 
 export async function GET(
   request: NextRequest,
@@ -56,7 +57,7 @@ export async function GET(
       getSessionsByAppAndUser(appId, dbUserId, dbSessionId),
     ])
 
-    const { data: difyData }: any = difyResult
+    const { data: difyData } = difyResult as { data: DifyConversationsResponse }
 
     // DB 세션을 difyConversationId로 매핑
     const sessionMap = new Map<string, { dbSessionId: string, isPinned: boolean, pinnedAt: Date | null, customTitle: string | null }>()
@@ -72,7 +73,7 @@ export async function GET(
     }
 
     // Dify 대화 목록에 DB 세션 정보 머지
-    const conversations = (difyData?.data || []).map((conv: any) => {
+    const conversations = (difyData?.data || []).map((conv: DifyConversation) => {
       const dbInfo = sessionMap.get(conv.id)
       return {
         ...conv,
@@ -90,11 +91,12 @@ export async function GET(
       data: conversations,
     })
   }
-  catch (error: any) {
+  catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('Get conversations error:', error)
     return NextResponse.json({
       data: [],
-      error: error.message,
-    })
+      error: message,
+    }, { status: 500 })
   }
 }

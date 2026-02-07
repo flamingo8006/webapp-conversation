@@ -181,7 +181,7 @@ export async function saveMessage(data: {
   parentMessageId?: string // assistant 메시지가 어떤 user 메시지에 대한 답변인지
   role: 'user' | 'assistant'
   content: string
-  files?: any
+  files?: Record<string, unknown>
   tokenCount?: number
 }): Promise<ChatMessage> {
   return await prisma.chatMessage.create({

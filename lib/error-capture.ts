@@ -10,7 +10,7 @@ class ErrorCapture {
 
       await errorLogRepository.create({
         errorType: err.name || 'Error',
-        errorCode: (error as any)?.code,
+        errorCode: error instanceof Error ? (error as Error & { code?: string }).code : undefined,
         message: err.message,
         stackTrace: err.stack,
         source: context.source || 'API_ROUTE',

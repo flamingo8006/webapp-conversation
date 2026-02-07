@@ -52,7 +52,7 @@ export async function GET(
 
     return NextResponse.json(data as object)
   }
-  catch (error: any) {
+  catch (error: unknown) {
     console.error('Get parameters error:', error)
     return NextResponse.json([])
   }

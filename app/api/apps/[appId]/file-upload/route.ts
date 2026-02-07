@@ -66,10 +66,11 @@ export async function POST(
     // 파일 업로드
     const res = await client.fileUpload(formData)
 
-    return new Response(res.data.id as any)
+    return new Response(String(res.data.id))
   }
-  catch (error: any) {
+  catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('File upload error:', error)
-    return new Response(error.message, { status: 500 })
+    return new Response(message, { status: 500 })
   }
 }

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { ChatClient } from 'dify-client'
 import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
+import type { DifyMessage, DifyMessageFile, DifyMessagesResponse } from '@/types/dify'
 
 export async function GET(
   request: NextRequest,
@@ -59,14 +60,14 @@ export async function GET(
     const client = new ChatClient(app.apiKey, app.apiUrl)
 
     // 메시지 조회
-    const { data }: any = await client.getConversationMessages(difyUser, conversationId)
+    const { data } = await client.getConversationMessages(difyUser, conversationId) as { data: DifyMessagesResponse }
 
     // 파일 URL 변환: 상대 경로를 전체 URL로 변환
     const difyBaseUrl = app.apiUrl?.replace('/v1', '') || ''
     if (difyBaseUrl && data.data) {
-      data.data = data.data.map((message: any) => {
+      data.data = data.data.map((message: DifyMessage) => {
         if (message.message_files) {
-          message.message_files = message.message_files.map((file: any) => {
+          message.message_files = message.message_files.map((file: DifyMessageFile) => {
             if (file.url && file.url.startsWith('/files/')) {
               file.url = `${difyBaseUrl}${file.url}`
             }
@@ -79,10 +80,11 @@ export async function GET(
 
     return NextResponse.json(data)
   }
-  catch (error: any) {
+  catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('Get messages error:', error)
     return NextResponse.json(
-      { error: error.message },
+      { error: message },
       { status: 500 },
     )
   }

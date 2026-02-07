@@ -100,8 +100,7 @@ export async function updateChatbotApp(
     updatedBy?: string
   },
 ): Promise<ChatbotAppPublic> {
-  const updateData: any = { ...data }
-  delete updateData.apiKey
+  const { apiKey, ...updateData } = data
 
   // API Key가 제공된 경우에만 암호화하여 업데이트
   if (data.apiKey) {
