@@ -5,6 +5,7 @@ import { ChatClient } from 'dify-client'
 import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
 import { getOrCreateSession, getAnonymousMessageCount, saveMessage, updateSessionConversationId } from '@/lib/repositories/chat-session'
+import { trackMessageStats } from '@/lib/stats-helper'
 
 // SSE 이벤트 파싱 유틸리티 (버퍼 기반 - 청크 경계 처리)
 function createSSEParser() {
@@ -157,6 +158,7 @@ export async function POST(
         files,
       })
       userMessageId = userMessage.id
+      trackMessageStats(appId, 'user')
     }
 
     // 동적으로 ChatClient 생성
@@ -239,6 +241,7 @@ export async function POST(
                 content: fullAnswer,
                 tokenCount: totalTokens,
               })
+              trackMessageStats(appId, 'assistant', totalTokens)
 
               // conversation_id 업데이트 (새 대화인 경우)
               if (newConversationId) {
