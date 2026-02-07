@@ -140,9 +140,15 @@ export async function getChatbotAppWithKey(id: string): Promise<ChatbotAppWithKe
   if (!app)
   { return null }
 
-  return {
-    ...toPublic(app),
-    apiKey: decrypt(app.apiKeyEncrypted),
+  try {
+    return {
+      ...toPublic(app),
+      apiKey: decrypt(app.apiKeyEncrypted),
+    }
+  }
+  catch (error) {
+    console.error(`Failed to decrypt API key for app ${id}:`, error)
+    return null
   }
 }
 
