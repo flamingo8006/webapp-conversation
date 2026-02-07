@@ -336,10 +336,15 @@ Phase 8c-3 디자인 개선 + 버그 수정은 코드 작업 완료 상태이나
 - [x] Phase 10-4: 입력값 검증 추가
 - [x] Phase 10-5: Repository 에러 핸들링 보강
 
+### 진행 중: Phase 11 - 통계 자동 집계 + 에러 캡처 자동화
+- [x] 작업 계획 수립 → [`docs/phase11-plan.md`](docs/phase11-plan.md)
+- [ ] Phase 11-1: 통계 데이터 자동 집계 (메시지 전송 시 DailyUsageStats 증분)
+- [ ] Phase 11-2: 에러 캡처 자동화 (33개 API catch 블록에 errorCapture 연동)
+
 ### 우선순위 1: 추가 기능
 - [ ] 사용자/그룹 관리 (User, Department, UserRole 추가)
-- [ ] 통계 데이터 자동 집계 (Cron Job 또는 트리거)
-- [ ] 에러 캡처 자동화 (API 라우트 에러 핸들러) → Phase 10-2에서 일부 진행 예정
+- [x] 통계 데이터 자동 집계 → Phase 11-1으로 진행 중
+- [x] 에러 캡처 자동화 → Phase 11-2로 진행 중
 
 ### 우선순위 2: 프로덕션 준비
 - [ ] E2E 테스트 작성
