@@ -226,13 +226,33 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
   - 31개 API 라우트 파일, 41개 catch 블록에 `errorCapture.captureApiError()` 추가
   - fire-and-forget 패턴 (await 없이, `.catch(() => {})` 안전장치)
 
+### Phase 12: 구조화된 로깅 시스템 ✅
+- [x] Phase 12-1: 로거 모듈 생성 (`lib/logger.ts`)
+  - 로그 레벨 (debug/info/warn/error), 개발/프로덕션 이중 포맷
+  - API 헬퍼 메서드 (`apiError`, `apiWarn` 등) - request 컨텍스트 자동 추출
+- [x] Phase 12-2: API 라우트에 로거 적용
+  - 34개 API 라우트 파일, 46개 `console.error/warn` → `logger.apiError/apiWarn` 교체
+- [x] Phase 12-3: 라이브러리에 로거 적용
+  - 7개 lib 파일, 11개 `console.error/warn` → `logger.error/warn` 교체
+- [x] Phase 12-4: 미들웨어에 Request ID 추가
+  - 모든 요청에 `x-request-id` UUID 부여, 요청 추적 가능
+
 ---
 
 ## 🔄 현재 진행 중인 작업
 
-**상태**: Phase 11 (통계 자동 집계 + 에러 캡처 자동화) **완료**
+**상태**: Phase 12 (구조화된 로깅 시스템) **완료**
 
-**상세 계획서**: [`docs/phase11-plan.md`](docs/phase11-plan.md)
+**상세 계획서**: [`docs/phase12-plan.md`](docs/phase12-plan.md)
+
+### Phase 12 작업 목록 (2026-02-07)
+
+| Phase | 작업 | 위험도 | 상태 | 커밋 |
+|-------|------|--------|------|------|
+| 12-1 | 로거 모듈 생성 (`lib/logger.ts`) | 매우 낮음 | ✅ 완료 | `e292941` |
+| 12-2 | API 라우트에 로거 적용 (34개 파일, 46개 교체) | 낮음 | ✅ 완료 | `1eb065c` |
+| 12-3 | 라이브러리에 로거 적용 (7개 파일, 11개 교체) | 낮음 | ✅ 완료 | `c3b5b70` |
+| 12-4 | 미들웨어에 Request ID 추가 | 낮음 | ✅ 완료 | `30100f3` |
 
 ### Phase 11 작업 목록 (2026-02-07)
 
@@ -362,6 +382,13 @@ Phase 8c-3 디자인 개선 + 버그 수정은 코드 작업 완료 상태이나
 - [x] Phase 11-1: 통계 데이터 자동 집계 (메시지 전송 시 DailyUsageStats 증분) → `0ac4ea2`
 - [x] Phase 11-2: 에러 캡처 자동화 (31개 API 파일, 41개 catch 블록) → `3b4ca58`
 
+### 완료: Phase 12 - 구조화된 로깅 시스템 ✅
+- [x] 작업 계획 수립 → [`docs/phase12-plan.md`](docs/phase12-plan.md)
+- [x] Phase 12-1: 로거 모듈 생성 → `e292941`
+- [x] Phase 12-2: API 라우트에 로거 적용 (34개 파일) → `1eb065c`
+- [x] Phase 12-3: 라이브러리에 로거 적용 (7개 파일) → `c3b5b70`
+- [x] Phase 12-4: 미들웨어에 Request ID 추가 → `30100f3`
+
 ### 우선순위 1: 추가 기능
 - [ ] 사용자/그룹 관리 (User, Department, UserRole 추가)
 - [x] 통계 데이터 자동 집계 → Phase 11-1 완료
@@ -372,7 +399,7 @@ Phase 8c-3 디자인 개선 + 버그 수정은 코드 작업 완료 상태이나
 - [ ] 보안 검토
 - [ ] 성능 최적화
 - [x] 에러 핸들링 강화 → Phase 10 완료
-- [ ] 로깅 시스템
+- [x] 로깅 시스템 → Phase 12 완료
 
 ### 우선순위 3: 레거시 인증 연동 후 테스트
 - [ ] **인증형 임베드 테스트** - `npx ts-node scripts/generate-embed-token.ts` 사용
@@ -766,6 +793,7 @@ npm run start
 ---
 
 **마지막 업데이트**: 2026-02-07
+**Phase 12 완료**: 구조화된 로깅 시스템 (로거 모듈 + 41개 파일 적용 + Request ID)
 **Phase 11 완료**: 통계 자동 집계 + 에러 캡처 자동화 (31개 API 파일)
 **Phase 10 완료**: 에러 핸들링 강화 + 코드 품질 개선 (10-2 추후 진행)
 **Phase 8c 완료**: 앱형 UI 변경 (ChatGPT 스타일 - WelcomeScreen, 날짜별 그룹핑, 검색 등)
