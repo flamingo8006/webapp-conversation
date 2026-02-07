@@ -3,6 +3,24 @@ import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/jwt'
 
 /**
+ * Request ID 생성 (요청 추적용)
+ */
+function generateRequestId(): string {
+  return `req_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`
+}
+
+/**
+ * NextResponse.next()에 request ID 헤더를 포함하여 반환
+ */
+function nextWithRequestId(requestId: string, headers?: Headers): NextResponse {
+  const requestHeaders = headers || new Headers()
+  requestHeaders.set('x-request-id', requestId)
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  })
+}
+
+/**
  * 간단한 IP 화이트리스트 체크 (Edge Runtime용)
  * CIDR 지원 (기본적인 /24, /16 등)
  */
@@ -75,11 +93,12 @@ const adminPaths = [
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const requestId = generateRequestId()
 
   // 공개 경로는 통과 (prefix 매칭 또는 정확히 일치)
   if (publicPathPrefixes.some(path => pathname.startsWith(path))
     || publicExactPaths.includes(pathname)) {
-    return NextResponse.next()
+    return nextWithRequestId(requestId)
   }
 
   // Phase 7: 공개 챗봇 경로 처리 (/simple-chat/[appId], /chat/[appId], /api/apps/[appId]/*)
@@ -101,11 +120,7 @@ export async function middleware(request: NextRequest) {
     // sessionId가 있으면 익명 사용자로 표시
     if (sessionId) {
       requestHeaders.set('x-is-anonymous', 'true')
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      })
+      return nextWithRequestId(requestId, requestHeaders)
     }
 
     // JWT가 있으면 인증 사용자로 처리
@@ -117,17 +132,13 @@ export async function middleware(request: NextRequest) {
         requestHeaders.set('x-user-name', Buffer.from(payload.name, 'utf-8').toString('base64'))
         requestHeaders.set('x-user-role', payload.role)
         requestHeaders.set('x-is-anonymous', 'false')
-        return NextResponse.next({
-          request: {
-            headers: requestHeaders,
-          },
-        })
+        return nextWithRequestId(requestId, requestHeaders)
       }
     }
 
     // sessionId도 token도 없으면 통과 (API 라우트에서 챗봇 설정 확인 후 처리)
     // 페이지 요청은 통과, API 요청도 통과 (API에서 권한 체크)
-    return NextResponse.next()
+    return nextWithRequestId(requestId)
   }
 
   // Embed 모드: URL 파라미터로 토큰 전달
@@ -137,7 +148,9 @@ export async function middleware(request: NextRequest) {
       const payload = await verifyToken(token)
       if (payload) {
         // 토큰이 유효하면 세션 쿠키 설정 후 통과
-        const response = NextResponse.next()
+        const embedHeaders = new Headers(request.headers)
+        embedHeaders.set('x-request-id', requestId)
+        const response = NextResponse.next({ request: { headers: embedHeaders } })
         response.cookies.set('embed_auth_token', token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -152,7 +165,7 @@ export async function middleware(request: NextRequest) {
     if (embedToken) {
       const payload = await verifyToken(embedToken)
       if (payload) {
-        return NextResponse.next()
+        return nextWithRequestId(requestId)
       }
     }
     // 인증 실패
@@ -173,7 +186,7 @@ export async function middleware(request: NextRequest) {
 
     // API는 별도 인증 체크 (admin-auth.ts에서 처리)
     if (pathname.startsWith('/api/admin')) {
-      return NextResponse.next()
+      return nextWithRequestId(requestId)
     }
     // 관리자 페이지는 admin_token 쿠키로 인증
     const adminToken = request.cookies.get('admin_token')?.value
@@ -181,7 +194,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
     // admin_token 검증은 AdminAuthProvider에서 처리
-    return NextResponse.next()
+    return nextWithRequestId(requestId)
   }
 
   // 일반 경로: 쿠키 또는 Authorization 헤더에서 토큰 확인
@@ -221,11 +234,7 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-user-name', Buffer.from(payload.name, 'utf-8').toString('base64'))
   requestHeaders.set('x-user-role', payload.role)
 
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  })
+  return nextWithRequestId(requestId, requestHeaders)
 }
 
 export const config = {
