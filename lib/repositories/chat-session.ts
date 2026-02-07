@@ -280,18 +280,20 @@ export async function getSessionById(
 export async function getSessionByDifyConversationId(
   appId: string,
   difyConversationId: string,
+  activeOnly = false,
 ): Promise<ChatSession | null> {
   return await prisma.chatSession.findFirst({
     where: {
       appId,
       difyConversationId,
-      isActive: true,
+      ...(activeOnly ? { isActive: true } : {}),
     },
   })
 }
 
 /**
  * Phase 8c-3: 앱+사용자별 세션 목록 조회 (conversations API 머지용)
+ * isActive 필터 없이 전체 조회 → 삭제된 대화를 Dify 목록에서 필터링하기 위해
  */
 export async function getSessionsByAppAndUser(
   appId: string,
@@ -301,7 +303,6 @@ export async function getSessionsByAppAndUser(
   return await prisma.chatSession.findMany({
     where: {
       appId,
-      isActive: true,
       ...(userId
         ? { userId, isAnonymous: false }
         : anonymousSessionId

@@ -11,9 +11,10 @@ function generateRequestId(): string {
 
 /**
  * NextResponse.next()에 request ID 헤더를 포함하여 반환
+ * 기존 request headers를 복제하여 Cookie 등 원본 헤더를 유지
  */
-function nextWithRequestId(requestId: string, headers?: Headers): NextResponse {
-  const requestHeaders = headers || new Headers()
+function nextWithRequestId(request: NextRequest, requestId: string, headers?: Headers): NextResponse {
+  const requestHeaders = headers || new Headers(request.headers)
   requestHeaders.set('x-request-id', requestId)
   return NextResponse.next({
     request: { headers: requestHeaders },
@@ -98,7 +99,7 @@ export async function middleware(request: NextRequest) {
   // 공개 경로는 통과 (prefix 매칭 또는 정확히 일치)
   if (publicPathPrefixes.some(path => pathname.startsWith(path))
     || publicExactPaths.includes(pathname)) {
-    return nextWithRequestId(requestId)
+    return nextWithRequestId(request, requestId)
   }
 
   // Phase 7: 공개 챗봇 경로 처리 (/simple-chat/[appId], /chat/[appId], /api/apps/[appId]/*)
@@ -117,13 +118,7 @@ export async function middleware(request: NextRequest) {
 
     const requestHeaders = new Headers(request.headers)
 
-    // sessionId가 있으면 익명 사용자로 표시
-    if (sessionId) {
-      requestHeaders.set('x-is-anonymous', 'true')
-      return nextWithRequestId(requestId, requestHeaders)
-    }
-
-    // JWT가 있으면 인증 사용자로 처리
+    // JWT를 먼저 확인 (인증 사용자 우선)
     if (token) {
       const payload = await verifyToken(token)
       if (payload) {
@@ -132,13 +127,19 @@ export async function middleware(request: NextRequest) {
         requestHeaders.set('x-user-name', Buffer.from(payload.name, 'utf-8').toString('base64'))
         requestHeaders.set('x-user-role', payload.role)
         requestHeaders.set('x-is-anonymous', 'false')
-        return nextWithRequestId(requestId, requestHeaders)
+        return nextWithRequestId(request, requestId, requestHeaders)
       }
+    }
+
+    // JWT 없고 sessionId가 있으면 익명 사용자로 표시
+    if (sessionId) {
+      requestHeaders.set('x-is-anonymous', 'true')
+      return nextWithRequestId(request, requestId, requestHeaders)
     }
 
     // sessionId도 token도 없으면 통과 (API 라우트에서 챗봇 설정 확인 후 처리)
     // 페이지 요청은 통과, API 요청도 통과 (API에서 권한 체크)
-    return nextWithRequestId(requestId)
+    return nextWithRequestId(request, requestId)
   }
 
   // Embed 모드: URL 파라미터로 토큰 전달
@@ -165,7 +166,7 @@ export async function middleware(request: NextRequest) {
     if (embedToken) {
       const payload = await verifyToken(embedToken)
       if (payload) {
-        return nextWithRequestId(requestId)
+        return nextWithRequestId(request, requestId)
       }
     }
     // 인증 실패
@@ -186,7 +187,7 @@ export async function middleware(request: NextRequest) {
 
     // API는 별도 인증 체크 (admin-auth.ts에서 처리)
     if (pathname.startsWith('/api/admin')) {
-      return nextWithRequestId(requestId)
+      return nextWithRequestId(request, requestId)
     }
     // 관리자 페이지는 admin_token 쿠키로 인증
     const adminToken = request.cookies.get('admin_token')?.value
@@ -194,7 +195,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
     // admin_token 검증은 AdminAuthProvider에서 처리
-    return nextWithRequestId(requestId)
+    return nextWithRequestId(request, requestId)
   }
 
   // 일반 경로: 쿠키 또는 Authorization 헤더에서 토큰 확인
@@ -234,7 +235,7 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-user-name', Buffer.from(payload.name, 'utf-8').toString('base64'))
   requestHeaders.set('x-user-role', payload.role)
 
-  return nextWithRequestId(requestId, requestHeaders)
+  return nextWithRequestId(request, requestId, requestHeaders)
 }
 
 export const config = {

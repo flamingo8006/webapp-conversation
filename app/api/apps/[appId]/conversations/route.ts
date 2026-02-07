@@ -61,32 +61,42 @@ export async function GET(
 
     const { data: difyData } = difyResult as { data: DifyConversationsResponse }
 
-    // DB 세션을 difyConversationId로 매핑
-    const sessionMap = new Map<string, { dbSessionId: string, isPinned: boolean, pinnedAt: Date | null, customTitle: string | null }>()
+    // DB 세션을 difyConversationId로 매핑 (활성 + 삭제 모두 포함)
+    const activeSessionMap = new Map<string, { dbSessionId: string, isPinned: boolean, pinnedAt: Date | null, customTitle: string | null }>()
+    const deletedConversationIds = new Set<string>()
+
     for (const s of dbSessions) {
       if (s.difyConversationId) {
-        sessionMap.set(s.difyConversationId, {
-          dbSessionId: s.id,
-          isPinned: s.isPinned,
-          pinnedAt: s.pinnedAt,
-          customTitle: s.customTitle,
-        })
+        if (s.isActive) {
+          activeSessionMap.set(s.difyConversationId, {
+            dbSessionId: s.id,
+            isPinned: s.isPinned,
+            pinnedAt: s.pinnedAt,
+            customTitle: s.customTitle,
+          })
+        }
+        else {
+          // 삭제된 세션의 dify conversation_id 기록
+          deletedConversationIds.add(s.difyConversationId)
+        }
       }
     }
 
-    // Dify 대화 목록에 DB 세션 정보 머지
-    const conversations = (difyData?.data || []).map((conv: DifyConversation) => {
-      const dbInfo = sessionMap.get(conv.id)
-      return {
-        ...conv,
-        // customTitle이 있으면 name 덮어쓰기
-        name: dbInfo?.customTitle || conv.name,
-        // DB 정보 추가
-        dbSessionId: dbInfo?.dbSessionId || null,
-        isPinned: dbInfo?.isPinned || false,
-        pinnedAt: dbInfo?.pinnedAt || null,
-      }
-    })
+    // Dify 대화 목록에서 삭제된 대화 필터링 후 DB 정보 머지
+    const conversations = (difyData?.data || [])
+      .filter((conv: DifyConversation) => !deletedConversationIds.has(conv.id))
+      .map((conv: DifyConversation) => {
+        const dbInfo = activeSessionMap.get(conv.id)
+        return {
+          ...conv,
+          // customTitle이 있으면 name 덮어쓰기
+          name: dbInfo?.customTitle || conv.name,
+          // DB 정보 추가
+          dbSessionId: dbInfo?.dbSessionId || null,
+          isPinned: dbInfo?.isPinned || false,
+          pinnedAt: dbInfo?.pinnedAt || null,
+        }
+      })
 
     return NextResponse.json({
       ...difyData,
