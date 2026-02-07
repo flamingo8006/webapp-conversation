@@ -5,6 +5,7 @@ import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
 import type { DifyMessage, DifyMessageFile, DifyMessagesResponse } from '@/types/dify'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
@@ -83,7 +84,7 @@ export async function GET(
   }
   catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('Get messages error:', error)
+    logger.apiError(request, 'Get messages error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: message },

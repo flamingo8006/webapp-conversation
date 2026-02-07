@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/jwt'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 /**
  * POST /api/auth/token
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     return response
   }
   catch (error) {
-    console.error('Token processing error:', error)
+    logger.apiError(request, 'Token processing error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Failed to process token' },

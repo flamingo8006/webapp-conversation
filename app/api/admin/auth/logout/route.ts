@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getAdminFromRequest, getActorInfo } from '@/lib/admin-auth'
 import { auditLogger } from '@/lib/audit-logger'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     return response
   }
   catch (error) {
-    console.error('Admin logout error:', error)
+    logger.apiError(request, 'Admin logout error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '로그아웃 중 오류가 발생했습니다.' },

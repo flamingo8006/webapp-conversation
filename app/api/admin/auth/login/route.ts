@@ -4,6 +4,7 @@ import { authenticateAdmin } from '@/lib/admin-auth'
 import { auditLogger } from '@/lib/audit-logger'
 import { isIpAllowed, getClientIp } from '@/lib/ip-utils'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
     return response
   }
   catch (error) {
-    console.error('Admin login error:', error)
+    logger.apiError(request, 'Admin login error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '로그인 중 오류가 발생했습니다.' },

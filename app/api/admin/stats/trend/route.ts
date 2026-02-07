@@ -4,6 +4,7 @@ import { requireAdminAuth } from '@/lib/admin-auth'
 import { usageStatsRepository } from '@/lib/repositories/usage-stats'
 import { parsePositiveInt } from '@/lib/validation'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 // 트렌드 데이터 조회
 // super_admin: 전체 통계
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     })
   }
   catch (error) {
-    console.error('Get stats trend error:', error)
+    logger.apiError(request, 'Get stats trend error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '트렌드 데이터 조회 중 오류가 발생했습니다.' },

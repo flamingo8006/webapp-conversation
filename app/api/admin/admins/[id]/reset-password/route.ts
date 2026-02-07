@@ -4,6 +4,7 @@ import { requireSuperAdmin, getActorInfo } from '@/lib/admin-auth'
 import { adminRepository } from '@/lib/repositories/admin'
 import { auditLogger } from '@/lib/audit-logger'
 import { validatePassword, getPasswordPolicyDescription } from '@/lib/password-policy'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
   }
   catch (error) {
-    console.error('Reset password error:', error)
+    logger.apiError(request, 'Reset password error', { error })
     return NextResponse.json(
       { error: '비밀번호 초기화 중 오류가 발생했습니다.' },
       { status: 500 },

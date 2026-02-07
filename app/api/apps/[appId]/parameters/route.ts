@@ -4,6 +4,7 @@ import { ChatClient } from 'dify-client'
 import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
@@ -54,7 +55,7 @@ export async function GET(
     return NextResponse.json(data as object)
   }
   catch (error: unknown) {
-    console.error('Get parameters error:', error)
+    logger.apiError(request, 'Get parameters error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json([])
   }

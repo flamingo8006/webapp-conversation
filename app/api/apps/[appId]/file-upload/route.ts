@@ -5,6 +5,7 @@ import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
 import { getAnonymousMessageCount } from '@/lib/repositories/chat-session'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 export async function POST(
   request: NextRequest,
@@ -71,7 +72,7 @@ export async function POST(
   }
   catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('File upload error:', error)
+    logger.apiError(request, 'File upload error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return new Response(message, { status: 500 })
   }

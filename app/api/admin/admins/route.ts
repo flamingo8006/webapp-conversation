@@ -4,6 +4,7 @@ import { requireSuperAdmin, getActorInfo } from '@/lib/admin-auth'
 import { adminRepository } from '@/lib/repositories/admin'
 import { auditLogger } from '@/lib/audit-logger'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 // 관리자 목록 조회 (슈퍼관리자 전용)
 export async function GET(request: NextRequest) {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ admins, counts })
   }
   catch (error) {
-    console.error('List admins error:', error)
+    logger.apiError(request, 'List admins error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '관리자 목록 조회 중 오류가 발생했습니다.' },
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ admin }, { status: 201 })
   }
   catch (error) {
-    console.error('Create admin error:', error)
+    logger.apiError(request, 'Create admin error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '관리자 생성 중 오류가 발생했습니다.' },

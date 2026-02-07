@@ -4,6 +4,7 @@ import { requireSuperAdmin, getActorInfo } from '@/lib/admin-auth'
 import { errorLogRepository, type ErrorStatus } from '@/lib/repositories/error-log'
 import { auditLogger } from '@/lib/audit-logger'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error })
   }
   catch (error) {
-    console.error('Get error detail error:', error)
+    logger.apiError(request, 'Get error detail error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '에러 조회 중 오류가 발생했습니다.' },
@@ -97,7 +98,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: updatedError })
   }
   catch (error) {
-    console.error('Update error status error:', error)
+    logger.apiError(request, 'Update error status error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '상태 변경 중 오류가 발생했습니다.' },

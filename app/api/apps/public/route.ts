@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { listPublicChatbotApps } from '@/lib/repositories/chatbot-app'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 /**
  * GET - 공개 챗봇 목록 조회
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(apps)
   }
   catch (error) {
-    console.error('Failed to list public apps:', error)
+    logger.apiError(request, 'Failed to list public apps', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },

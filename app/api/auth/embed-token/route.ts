@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { signToken } from '@/lib/jwt'
+import { logger } from '@/lib/logger'
 
 /**
  * Embed용 JWT 토큰 생성 API
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     })
   }
   catch (error) {
-    console.error('Embed token generation error:', error)
+    logger.apiError(request, 'Embed token generation error', { error })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

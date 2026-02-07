@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 // 클라이언트 에러 리포트
 export async function POST(request: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
   }
   catch (error) {
-    console.error('Error report error:', error)
+    logger.apiError(request, 'Error report error', { error })
     return NextResponse.json(
       { error: '에러 리포트 중 오류가 발생했습니다.' },
       { status: 500 },

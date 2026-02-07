@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { requireAdminAuth } from '@/lib/admin-auth'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 import {
   getChatbotAppById,
   updateChatbotApp,
@@ -50,7 +51,7 @@ export async function GET(
     return NextResponse.json(app)
   }
   catch (error) {
-    console.error('Failed to get app:', error)
+    logger.apiError(request, 'Failed to get app', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -142,7 +143,7 @@ export async function PUT(
     return NextResponse.json(app)
   }
   catch (error) {
-    console.error('Failed to update app:', error)
+    logger.apiError(request, 'Failed to update app', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -190,7 +191,7 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   }
   catch (error) {
-    console.error('Failed to delete app:', error)
+    logger.apiError(request, 'Failed to delete app', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },

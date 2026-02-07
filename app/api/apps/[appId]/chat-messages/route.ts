@@ -7,6 +7,7 @@ import { getUserFromRequest } from '@/lib/auth-utils'
 import { getOrCreateSession, getAnonymousMessageCount, saveMessage, updateSessionConversationId } from '@/lib/repositories/chat-session'
 import { trackMessageStats } from '@/lib/stats-helper'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 // SSE 이벤트 파싱 유틸리티 (버퍼 기반 - 청크 경계 처리)
 function createSSEParser() {
@@ -250,7 +251,7 @@ export async function POST(
               }
             }
             catch (error) {
-              console.error('Failed to save assistant message:', error)
+              logger.apiError(request, 'Failed to save assistant message', { error })
             }
           }
 
@@ -258,7 +259,7 @@ export async function POST(
         })
 
         nodeStream.on('error', (error) => {
-          console.error('Stream error:', error)
+          logger.apiError(request, 'Stream error', { error })
           controller.error(error)
         })
       },
@@ -273,7 +274,7 @@ export async function POST(
     })
   }
   catch (error) {
-    console.error('Chat message error:', error)
+    logger.apiError(request, 'Chat message error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },

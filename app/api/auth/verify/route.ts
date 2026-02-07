@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/jwt'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
     })
   }
   catch (error) {
-    console.error('Token verification error:', error)
+    logger.apiError(request, 'Token verification error', { error })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

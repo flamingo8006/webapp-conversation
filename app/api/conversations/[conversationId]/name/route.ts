@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { client, getInfo } from '@/app/api/utils/common'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest, { params }: {
   params: Promise<{ conversationId: string }>
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest, { params }: {
   catch (error) {
     // Multi-App 환경에서는 전역 client가 작동하지 않을 수 있음
     // 에러를 조용히 처리하고 빈 응답 반환
-    console.warn('Failed to rename conversation:', error)
+    logger.apiWarn(request, 'Failed to rename conversation', { error })
     return NextResponse.json({ name: '' }, { status: 200 })
   }
 }

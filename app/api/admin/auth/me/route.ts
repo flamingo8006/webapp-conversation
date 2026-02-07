@@ -4,6 +4,7 @@ import { getAdminFromRequest, getActorInfo } from '@/lib/admin-auth'
 import { adminRepository } from '@/lib/repositories/admin'
 import { auditLogger } from '@/lib/audit-logger'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 // 현재 관리자 정보 조회
 export async function GET(request: NextRequest) {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ admin })
   }
   catch (error) {
-    console.error('Get admin me error:', error)
+    logger.apiError(request, 'Get admin me error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '정보 조회 중 오류가 발생했습니다.' },
@@ -92,7 +93,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ admin })
   }
   catch (error) {
-    console.error('Update admin me error:', error)
+    logger.apiError(request, 'Update admin me error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '정보 수정 중 오류가 발생했습니다.' },

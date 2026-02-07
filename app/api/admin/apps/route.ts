@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { requireAdminAuth } from '@/lib/admin-auth'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 import {
   listChatbotApps,
   createChatbotApp,
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(apps)
   }
   catch (error) {
-    console.error('Failed to list apps:', error)
+    logger.apiError(request, 'Failed to list apps', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(app, { status: 201 })
   }
   catch (error) {
-    console.error('Failed to create app:', error)
+    logger.apiError(request, 'Failed to create app', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },

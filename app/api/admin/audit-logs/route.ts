@@ -4,6 +4,7 @@ import { requireSuperAdmin } from '@/lib/admin-auth'
 import { auditLogRepository } from '@/lib/repositories/audit-log'
 import { parsePositiveInt } from '@/lib/validation'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 // 감사 로그 목록 조회 (슈퍼관리자 전용)
 export async function GET(request: NextRequest) {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result)
   }
   catch (error) {
-    console.error('Get audit logs error:', error)
+    logger.apiError(request, 'Get audit logs error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '감사 로그 조회 중 오류가 발생했습니다.' },

@@ -4,6 +4,7 @@ import { getAdminFromRequest, getActorInfo } from '@/lib/admin-auth'
 import { adminRepository } from '@/lib/repositories/admin'
 import { auditLogger } from '@/lib/audit-logger'
 import { errorCapture } from '@/lib/error-capture'
+import { logger } from '@/lib/logger'
 
 // 비밀번호 변경
 export async function PUT(request: NextRequest) {
@@ -73,7 +74,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, message: '비밀번호가 변경되었습니다.' })
   }
   catch (error) {
-    console.error('Change password error:', error)
+    logger.apiError(request, 'Change password error', { error })
     errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '비밀번호 변경 중 오류가 발생했습니다.' },
