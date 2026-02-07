@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireSuperAdmin, getActorInfo } from '@/lib/admin-auth'
 import { adminRepository } from '@/lib/repositories/admin'
 import { auditLogger } from '@/lib/audit-logger'
+import { errorCapture } from '@/lib/error-capture'
 
 /**
  * POST /api/admin/admins/:id/unlock
@@ -58,6 +59,7 @@ export async function POST(
   }
   catch (error) {
     console.error('Unlock admin error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '잠금 해제 중 오류가 발생했습니다.' },
       { status: 500 },

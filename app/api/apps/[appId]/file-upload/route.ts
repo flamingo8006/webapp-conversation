@@ -4,6 +4,7 @@ import { ChatClient } from 'dify-client'
 import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
 import { getAnonymousMessageCount } from '@/lib/repositories/chat-session'
+import { errorCapture } from '@/lib/error-capture'
 
 export async function POST(
   request: NextRequest,
@@ -71,6 +72,7 @@ export async function POST(
   catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('File upload error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return new Response(message, { status: 500 })
   }
 }

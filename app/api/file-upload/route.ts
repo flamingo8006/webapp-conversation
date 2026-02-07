@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { client, getInfo } from '@/app/api/utils/common'
+import { errorCapture } from '@/lib/error-capture'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +12,7 @@ export async function POST(request: NextRequest) {
   }
   catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Unknown error'
+    errorCapture.captureApiError(e, request).catch(() => {})
     return new Response(message)
   }
 }

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getAdminFromRequest, getActorInfo } from '@/lib/admin-auth'
 import { adminRepository } from '@/lib/repositories/admin'
 import { auditLogger } from '@/lib/audit-logger'
+import { errorCapture } from '@/lib/error-capture'
 
 // 비밀번호 변경
 export async function PUT(request: NextRequest) {
@@ -73,6 +74,7 @@ export async function PUT(request: NextRequest) {
   }
   catch (error) {
     console.error('Change password error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '비밀번호 변경 중 오류가 발생했습니다.' },
       { status: 500 },

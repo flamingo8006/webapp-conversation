@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireSuperAdmin, getActorInfo } from '@/lib/admin-auth'
 import { usageStatsRepository } from '@/lib/repositories/usage-stats'
 import { auditLogger } from '@/lib/audit-logger'
+import { errorCapture } from '@/lib/error-capture'
 
 // 통계 재계산 (슈퍼관리자 전용)
 export async function POST(request: NextRequest) {
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
   }
   catch (error) {
     console.error('Recalculate stats error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '통계 재계산 중 오류가 발생했습니다.' },
       { status: 500 },

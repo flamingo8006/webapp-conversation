@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { getSessionById, updateSessionTitle, toggleSessionPin, softDeleteSession, getSessionByDifyConversationId } from '@/lib/repositories/chat-session'
 import { getUserFromRequest } from '@/lib/auth-utils'
+import { errorCapture } from '@/lib/error-capture'
 
 interface RouteParams {
   params: Promise<{ appId: string, sessionId: string }>
@@ -77,6 +78,7 @@ export async function PATCH(
     return NextResponse.json({ success: true, session: updatedSession })
   } catch (error) {
     console.error('Session update error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -128,6 +130,7 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Session delete error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

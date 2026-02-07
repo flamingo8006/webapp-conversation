@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { client, getInfo, setSession } from '@/app/api/utils/common'
 import type { DifyConversationsResponse } from '@/types/dify'
+import { errorCapture } from '@/lib/error-capture'
 
 export async function GET(request: NextRequest) {
   const { sessionId, user } = getInfo(request)
@@ -13,6 +14,7 @@ export async function GET(request: NextRequest) {
   }
   catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json({
       data: [],
       error: message,

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireAdminAuth } from '@/lib/admin-auth'
 import prisma from '@/lib/prisma'
 import { parsePositiveInt } from '@/lib/validation'
+import { errorCapture } from '@/lib/error-capture'
 
 // 활동 내역 조회
 // super_admin: 전체 활동
@@ -172,6 +173,7 @@ export async function GET(request: NextRequest) {
   }
   catch (error) {
     console.error('Get activity error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '활동 내역 조회 중 오류가 발생했습니다.' },
       { status: 500 },

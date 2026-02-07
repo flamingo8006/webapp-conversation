@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { authenticateWithLegacy } from '@/lib/legacy-auth'
 import { signToken } from '@/lib/jwt'
+import { errorCapture } from '@/lib/error-capture'
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
   }
   catch (error) {
     console.error('Login error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

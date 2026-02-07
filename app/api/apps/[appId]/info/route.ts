@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { getChatbotAppById } from '@/lib/repositories/chatbot-app'
+import { errorCapture } from '@/lib/error-capture'
 
 /**
  * GET - 챗봇 정보 조회 (공개 API)
@@ -35,6 +36,7 @@ export async function GET(
   }
   catch (error) {
     console.error('Failed to get app info:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

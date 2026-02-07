@@ -6,6 +6,7 @@ import {
   getUserSessions,
   saveMessage,
 } from '@/lib/repositories/chat-session'
+import { errorCapture } from '@/lib/error-capture'
 
 // GET - 사용자의 세션 목록 조회
 export async function GET(
@@ -29,6 +30,7 @@ export async function GET(
   }
   catch (error) {
     console.error('Get sessions error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -96,6 +98,7 @@ export async function POST(
   }
   catch (error) {
     console.error('Session action error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

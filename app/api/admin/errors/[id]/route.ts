@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireSuperAdmin, getActorInfo } from '@/lib/admin-auth'
 import { errorLogRepository, type ErrorStatus } from '@/lib/repositories/error-log'
 import { auditLogger } from '@/lib/audit-logger'
+import { errorCapture } from '@/lib/error-capture'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
   catch (error) {
     console.error('Get error detail error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '에러 조회 중 오류가 발생했습니다.' },
       { status: 500 },
@@ -96,6 +98,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
   catch (error) {
     console.error('Update error status error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '상태 변경 중 오류가 발생했습니다.' },
       { status: 500 },

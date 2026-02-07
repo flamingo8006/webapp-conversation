@@ -6,6 +6,7 @@ import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
 import { getOrCreateSession, getAnonymousMessageCount, saveMessage, updateSessionConversationId } from '@/lib/repositories/chat-session'
 import { trackMessageStats } from '@/lib/stats-helper'
+import { errorCapture } from '@/lib/error-capture'
 
 // SSE 이벤트 파싱 유틸리티 (버퍼 기반 - 청크 경계 처리)
 function createSSEParser() {
@@ -273,6 +274,7 @@ export async function POST(
   }
   catch (error) {
     console.error('Chat message error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

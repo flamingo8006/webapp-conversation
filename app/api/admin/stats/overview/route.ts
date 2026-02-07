@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireAdminAuth } from '@/lib/admin-auth'
 import { usageStatsRepository } from '@/lib/repositories/usage-stats'
 import { parsePositiveInt } from '@/lib/validation'
+import { errorCapture } from '@/lib/error-capture'
 
 // 통계 개요 조회
 // super_admin: 전체 통계
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
   }
   catch (error) {
     console.error('Get stats overview error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '통계 조회 중 오류가 발생했습니다.' },
       { status: 500 },

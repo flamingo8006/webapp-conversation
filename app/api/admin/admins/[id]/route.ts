@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireSuperAdmin, getActorInfo } from '@/lib/admin-auth'
 import { adminRepository } from '@/lib/repositories/admin'
 import { auditLogger } from '@/lib/audit-logger'
+import { errorCapture } from '@/lib/error-capture'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
   catch (error) {
     console.error('Get admin error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '관리자 조회 중 오류가 발생했습니다.' },
       { status: 500 },
@@ -106,6 +108,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
   catch (error) {
     console.error('Update admin error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '관리자 수정 중 오류가 발생했습니다.' },
       { status: 500 },
@@ -169,6 +172,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   }
   catch (error) {
     console.error('Delete admin error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json(
       { error: '관리자 삭제 중 오류가 발생했습니다.' },
       { status: 500 },

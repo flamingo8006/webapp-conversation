@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { ChatClient } from 'dify-client'
 import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
+import { errorCapture } from '@/lib/error-capture'
 
 export async function GET(
   request: NextRequest,
@@ -54,6 +55,7 @@ export async function GET(
   }
   catch (error: unknown) {
     console.error('Get parameters error:', error)
+    errorCapture.captureApiError(error, request).catch(() => {})
     return NextResponse.json([])
   }
 }
