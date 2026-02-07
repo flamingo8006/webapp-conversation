@@ -163,7 +163,7 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
     }
 
     // update chat list of current conversation
-    if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding) {
+    if (!isNewConversation && currConversationId && !conversationIdChangeBecauseOfNew && !isResponding) {
       fetchChatList(appId, currConversationId).then((res: any) => {
         const { data } = res
         const newChatList: ChatItem[] = generateNewChatListWithOpenStatement(notSyncToStateIntroduction, notSyncToStateInputs)
@@ -710,7 +710,7 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
       if (res.ok || res.status === 404) {
         setConversationList(conversationList.filter(item => item.id !== id))
         if (currConversationId === id) {
-          setCurrConversationId('', appId)
+          setCurrConversationId('-1', appId)
         }
         notify({ type: 'success', message: t('app.sidebar.deleteSuccess') })
       }
