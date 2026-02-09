@@ -7,6 +7,7 @@ import { AppTable } from '@/app/components/admin/app-table'
 import Toast from '@/app/components/base/toast'
 import type { AppConfig } from '@/hooks/use-app'
 import { Button } from '@/components/ui/button'
+import { adminPath } from '@/lib/admin-path'
 
 export default function AppsListPage() {
   const [apps, setApps] = useState<AppConfig[]>([])
@@ -62,7 +63,7 @@ export default function AppsListPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/admin/apps/new">
+          <Link href={adminPath('/apps/new')}>
             <Plus className="mr-2 h-4 w-4" />
             새 챗봇 추가
           </Link>

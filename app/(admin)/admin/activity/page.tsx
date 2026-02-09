@@ -1,12 +1,15 @@
 'use client'
 
 import { Fragment, useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { RefreshCw, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, MessageSquare, Bot, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
+import { adminPath } from '@/lib/admin-path'
 
 interface MessageData {
   id: string
@@ -45,6 +48,9 @@ interface ChatbotApp {
 }
 
 export default function ActivityPage() {
+  const { isSuperAdmin } = useAdminAuth()
+  const router = useRouter()
+
   const [qaPairs, setQaPairs] = useState<QAPair[]>([])
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -55,6 +61,13 @@ export default function ActivityPage() {
   const [loading, setLoading] = useState(true)
   const [apps, setApps] = useState<ChatbotApp[]>([])
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+
+  // super_admin이 아니면 대시보드로 리다이렉트
+  useEffect(() => {
+    if (isSuperAdmin === false) {
+      router.replace(adminPath())
+    }
+  }, [isSuperAdmin, router])
 
   // 필터 상태
   const [selectedApp, setSelectedApp] = useState<string>('all')
@@ -250,8 +263,8 @@ export default function ActivityPage() {
                 <TableRow>
                   <TableHead className="w-[40px]"></TableHead>
                   <TableHead className="w-[140px]">시간</TableHead>
-                  <TableHead className="w-[120px]">챗봇</TableHead>
-                  <TableHead className="w-[100px]">사용자</TableHead>
+                  <TableHead className="w-[230px]">챗봇</TableHead>
+                  <TableHead className="w-[130px]">사용자</TableHead>
                   <TableHead>질문</TableHead>
                 </TableRow>
               </TableHeader>

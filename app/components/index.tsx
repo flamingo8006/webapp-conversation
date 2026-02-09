@@ -679,7 +679,7 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
   }
 
   const handleFeedback = async (messageId: string, feedback: Feedbacktype) => {
-    await updateFeedback({ url: `/messages/${messageId}/feedbacks`, body: { rating: feedback.rating } })
+    await updateFeedback({ url: `/apps/${appId}/messages/${messageId}/feedbacks`, body: { rating: feedback.rating } })
     const newChatList = chatList.map((item) => {
       if (item.id === messageId) {
         return {

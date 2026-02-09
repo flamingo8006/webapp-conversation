@@ -5,6 +5,12 @@ import { useParams, useRouter } from 'next/navigation'
 import { AppForm } from '@/app/components/admin/app-form'
 import Toast from '@/app/components/base/toast'
 import type { AppConfig } from '@/hooks/use-app'
+import { adminPath } from '@/lib/admin-path'
+
+interface AdminGroup {
+  id: string
+  name: string
+}
 
 export default function EditAppPage() {
   const params = useParams()
@@ -12,10 +18,12 @@ export default function EditAppPage() {
   const appId = params.appId as string
 
   const [app, setApp] = useState<AppConfig | null>(null)
+  const [groups, setGroups] = useState<AdminGroup[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchApp()
+    fetchGroups()
   }, [appId])
 
   const fetchApp = async () => {
@@ -28,7 +36,7 @@ export default function EditAppPage() {
             type: 'error',
             message: '챗봇을 찾을 수 없습니다.',
           })
-          router.push('/admin/apps')
+          router.push(adminPath('/apps'))
           return
         }
         throw new Error('Failed to fetch app')
@@ -43,11 +51,22 @@ export default function EditAppPage() {
         type: 'error',
         message: '챗봇 정보를 불러오는데 실패했습니다.',
       })
-      router.push('/admin/apps')
+      router.push(adminPath('/apps'))
     }
     finally {
       setLoading(false)
     }
+  }
+
+  const fetchGroups = async () => {
+    try {
+      const res = await fetch('/api/admin/groups')
+      if (res.ok) {
+        const data = await res.json()
+        setGroups((data.groups || []).filter((g: any) => g.isActive))
+      }
+    }
+    catch {}
   }
 
   if (loading) {
@@ -72,7 +91,7 @@ export default function EditAppPage() {
       </div>
 
       <div className="max-w-3xl">
-        <AppForm app={app} mode="edit" />
+        <AppForm app={app} mode="edit" groups={groups} />
       </div>
     </div>
   )

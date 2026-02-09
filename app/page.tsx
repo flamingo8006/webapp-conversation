@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { LogOut, Settings, Loader2, Info } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/use-auth'
+import { adminPath } from '@/lib/admin-path'
 import { AppList } from '@/app/components/portal/app-list'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -100,7 +101,7 @@ export default function PortalPage() {
                     </div>
                     {user.role === 'admin' && (
                       <Button asChild>
-                        <Link href="/admin">
+                        <Link href={adminPath()}>
                           <Settings className="mr-2 h-4 w-4" />
                           {t('app.portal.adminBtn')}
                         </Link>

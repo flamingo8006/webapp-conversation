@@ -1,5 +1,7 @@
 'use client'
 
+import { adminPath } from '@/lib/admin-path'
+
 export default function AdminError({
   error,
   reset,
@@ -32,7 +34,7 @@ export default function AdminError({
             다시 시도 / Retry
           </button>
           <a
-            href="/admin"
+            href={adminPath()}
             className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
             대시보드 / Dashboard

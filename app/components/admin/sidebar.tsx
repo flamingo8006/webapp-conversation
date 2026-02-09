@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Bot, Home, LogOut, Users, FileText, AlertTriangle, BarChart3, User, Activity } from 'lucide-react'
+import { LayoutDashboard, Bot, Home, LogOut, Users, FileText, AlertTriangle, BarChart3, User, Activity, FolderKanban } from 'lucide-react'
 import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
+import { adminPath } from '@/lib/admin-path'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 
@@ -12,19 +13,20 @@ export function AdminSidebar() {
   const { admin, logout, isSuperAdmin } = useAdminAuth()
 
   const navigation = [
-    { name: '대시보드', href: '/admin', icon: LayoutDashboard },
-    { name: '챗봇 관리', href: '/admin/apps', icon: Bot },
-    { name: '활동 내역', href: '/admin/activity', icon: Activity },
-    { name: '사용 통계', href: '/admin/stats', icon: BarChart3 },
+    { name: '대시보드', href: adminPath(), icon: LayoutDashboard },
+    { name: '챗봇 관리', href: adminPath('/apps'), icon: Bot },
+    { name: '사용 통계', href: adminPath('/stats'), icon: BarChart3 },
     // 슈퍼관리자 전용
     ...(isSuperAdmin
       ? [
-        { name: '관리자 관리', href: '/admin/admins', icon: Users },
-        { name: '감사 로그', href: '/admin/audit-logs', icon: FileText },
-        { name: '에러 모니터링', href: '/admin/errors', icon: AlertTriangle },
+        { name: '활동 내역', href: adminPath('/activity'), icon: Activity },
+        { name: '관리자 관리', href: adminPath('/admins'), icon: Users },
+        { name: '그룹 관리', href: adminPath('/groups'), icon: FolderKanban },
+        { name: '감사 로그', href: adminPath('/audit-logs'), icon: FileText },
+        { name: '에러 모니터링', href: adminPath('/errors'), icon: AlertTriangle },
       ]
       : []),
-    { name: '내 정보', href: '/admin/profile', icon: User },
+    { name: '내 정보', href: adminPath('/profile'), icon: User },
   ]
 
   return (
@@ -37,7 +39,7 @@ export function AdminSidebar() {
       {/* 네비게이션 */}
       <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {navigation.map((item) => {
-          const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
+          const isActive = pathname === item.href || (item.href !== adminPath() && pathname.startsWith(item.href))
           const Icon = item.icon
           return (
             <Link

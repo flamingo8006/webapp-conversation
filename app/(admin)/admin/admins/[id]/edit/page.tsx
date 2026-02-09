@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save } from 'lucide-react'
 import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
+import { adminPath } from '@/lib/admin-path'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -45,7 +46,7 @@ export default function EditAdminPage({ params }: EditAdminPageProps) {
 
   useEffect(() => {
     if (!isSuperAdmin) {
-      router.push('/admin')
+      router.push(adminPath())
       return
     }
 
@@ -62,11 +63,11 @@ export default function EditAdminPage({ params }: EditAdminPageProps) {
           setIsActive(data.admin.isActive)
         }
         else {
-          router.push('/admin/admins')
+          router.push(adminPath('/admins'))
         }
       }
       catch {
-        router.push('/admin/admins')
+        router.push(adminPath('/admins'))
       }
       finally {
         setLoading(false)
@@ -113,7 +114,7 @@ export default function EditAdminPage({ params }: EditAdminPageProps) {
         return
       }
 
-      router.push('/admin/admins')
+      router.push(adminPath('/admins'))
     }
     catch {
       setError('수정 중 오류가 발생했습니다.')
@@ -127,7 +128,7 @@ export default function EditAdminPage({ params }: EditAdminPageProps) {
     <div className="p-8">
       <div className="mb-8">
         <Button variant="ghost" asChild className="mb-4">
-          <Link href="/admin/admins">
+          <Link href={adminPath('/admins')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             목록으로
           </Link>

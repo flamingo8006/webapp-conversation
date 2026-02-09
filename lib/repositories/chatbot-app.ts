@@ -22,6 +22,7 @@ export interface ChatbotAppPublic {
   requireAuth: boolean // 인증 필수 여부
   allowAnonymous: boolean // 익명 사용자 허용
   maxAnonymousMsgs: number | null // 익명 사용자 최대 메시지 수
+  groupId: string | null // Phase 14: 그룹 배정
   createdAt: Date
   createdBy: string | null // 생성자 ID (Phase 8b - 권한 관리)
 }
@@ -49,6 +50,7 @@ export async function createChatbotApp(data: {
   requireAuth?: boolean
   allowAnonymous?: boolean
   maxAnonymousMsgs?: number
+  groupId?: string
   createdBy?: string
 }): Promise<ChatbotAppPublic> {
   const encryptedApiKey = encrypt(data.apiKey)
@@ -69,6 +71,7 @@ export async function createChatbotApp(data: {
       requireAuth: data.requireAuth ?? true,
       allowAnonymous: data.allowAnonymous ?? false,
       maxAnonymousMsgs: data.maxAnonymousMsgs,
+      groupId: data.groupId,
       createdBy: data.createdBy,
     },
   })
@@ -98,6 +101,7 @@ export async function updateChatbotApp(
     requireAuth?: boolean
     allowAnonymous?: boolean
     maxAnonymousMsgs?: number
+    groupId?: string | null
     updatedBy?: string
   },
 ): Promise<ChatbotAppPublic> {
@@ -219,6 +223,7 @@ function toPublic(app: ChatbotApp): ChatbotAppPublic {
     requireAuth: app.requireAuth,
     allowAnonymous: app.allowAnonymous,
     maxAnonymousMsgs: app.maxAnonymousMsgs,
+    groupId: app.groupId,
     createdAt: app.createdAt,
     createdBy: app.createdBy,
   }

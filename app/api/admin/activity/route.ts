@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { requireAdminAuth } from '@/lib/admin-auth'
+import { requireAdminAuth, getAdminVisibleAppIds } from '@/lib/admin-auth'
 import prisma from '@/lib/prisma'
 import { parsePositiveInt } from '@/lib/validation'
 import { errorCapture } from '@/lib/error-capture'
@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger'
 
 // 활동 내역 조회
 // super_admin: 전체 활동
-// admin: 본인이 생성한 챗봇의 활동만
+// admin: 그룹 기반 필터
 export async function GET(request: NextRequest) {
   try {
     const admin = await requireAdminAuth(request)
@@ -17,6 +17,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: '관리자 권한이 필요합니다.' },
         { status: 401 },
+      )
+    }
+
+    // 활동 내역은 super_admin 전용 (메시지 내용 포함)
+    if (admin.role !== 'super_admin') {
+      return NextResponse.json(
+        { error: '슈퍼관리자 권한이 필요합니다.' },
+        { status: 403 },
       )
     }
 
@@ -42,15 +50,8 @@ export async function GET(request: NextRequest) {
       lte: endDate ? new Date(endDate) : defaultEndDate,
     }
 
-    // super_admin은 전체, 일반 admin은 본인 앱만
-    let allowedAppIds: string[] | null = null
-    if (admin.role !== 'super_admin') {
-      const apps = await prisma.chatbotApp.findMany({
-        where: { createdBy: admin.sub, isActive: true },
-        select: { id: true },
-      })
-      allowedAppIds = apps.map(a => a.id)
-    }
+    // 그룹 기반 앱 ID 필터
+    const allowedAppIds = await getAdminVisibleAppIds(admin)
 
     // 필터 조건 생성
     const sessionWhere: Record<string, unknown> = {}

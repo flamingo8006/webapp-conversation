@@ -3,7 +3,8 @@ import type { FC } from 'react'
 import type { FeedbackFunc } from '../type'
 import type { ChatItem, MessageRating, VisionFile } from '@/types/app'
 import type { Emoji } from '@/types/tools'
-import { HandThumbDownIcon, HandThumbUpIcon } from '@heroicons/react/24/outline'
+import { ClipboardDocumentCheckIcon, ClipboardDocumentIcon, HandThumbDownIcon, HandThumbUpIcon } from '@heroicons/react/24/outline'
+import { HandThumbDownIcon as HandThumbDownSolidIcon, HandThumbUpIcon as HandThumbUpSolidIcon } from '@heroicons/react/24/solid'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import Button from '@/app/components/base/button'
@@ -86,6 +87,18 @@ const Answer: FC<IAnswerProps> = ({
   const isAgentMode = !!agent_thoughts && agent_thoughts.length > 0
 
   const { t } = useTranslation()
+  const [copied, setCopied] = React.useState(false)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+    catch {
+      // clipboard API 미지원 환경 폴백
+    }
+  }
 
   /**
    * Render feedback results (distinguish between users and administrators)
@@ -98,22 +111,23 @@ const Answer: FC<IAnswerProps> = ({
     if (!rating) { return null }
 
     const isLike = rating === 'like'
-    const ratingIconClassname = isLike ? 'text-primary-600 bg-primary-100 hover:bg-primary-200' : 'text-red-600 bg-red-100 hover:bg-red-200'
     // The tooltip is always displayed, but the content is different for different scenarios.
     return (
       <Tooltip
         selector={`user-feedback-${randomString(16)}`}
-        content={isLike ? '取消赞同' : '取消反对'}
+        content={isLike ? t('common.operation.cancelLike') as string : t('common.operation.cancelDislike') as string}
       >
         <div
-          className="relative box-border flex items-center justify-center h-7 w-7 p-0.5 rounded-lg bg-white cursor-pointer text-gray-500 hover:text-gray-800"
+          className="relative box-border flex items-center justify-center h-7 w-7 p-0.5 rounded-lg bg-white cursor-pointer hover:bg-gray-100"
           style={{ boxShadow: '0px 4px 6px -1px rgba(0, 0, 0, 0.1), 0px 2px 4px -2px rgba(0, 0, 0, 0.05)' }}
           onClick={async () => {
             await onFeedback?.(id, { rating: null })
           }}
         >
-          <div className={`${ratingIconClassname} rounded-lg h-6 w-6 flex items-center justify-center`}>
-            <RatingIcon isLike={isLike} />
+          <div className="rounded-lg h-6 w-6 flex items-center justify-center">
+            {isLike
+              ? <HandThumbUpSolidIcon className="w-4 h-4 text-blue-600" />
+              : <HandThumbDownSolidIcon className="w-4 h-4 text-red-600" />}
           </div>
         </div>
       </Tooltip>
@@ -142,6 +156,12 @@ const Answer: FC<IAnswerProps> = ({
 
     return (
       <div className={`${s.itemOperation} flex gap-2`}>
+        <Tooltip selector={`copy-btn-${randomString(16)}`} content={(copied ? t('common.operation.copied') : t('common.operation.copy')) as string}>
+          {OperationBtn({
+            innerContent: <IconWrapper>{copied ? <ClipboardDocumentCheckIcon className="w-4 h-4 text-green-600" /> : <ClipboardDocumentIcon className="w-4 h-4" />}</IconWrapper>,
+            onClick: handleCopy,
+          })}
+        </Tooltip>
         {userOperation()}
       </div>
     )

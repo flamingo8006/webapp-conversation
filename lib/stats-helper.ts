@@ -26,6 +26,24 @@ export function trackMessageStats(
 }
 
 /**
+ * 세션 통계 증분 (fire-and-forget)
+ */
+export function trackSessionStats(
+  appId: string,
+  isAnonymous: boolean,
+) {
+  usageStatsRepository.incrementStats({
+    date: new Date(),
+    appId,
+    newSessions: 1,
+    authSessions: isAnonymous ? 0 : 1,
+    anonymousSessions: isAnonymous ? 1 : 0,
+  }).catch((err) => {
+    logger.warn('Session stats increment failed (non-fatal)', { error: err })
+  })
+}
+
+/**
  * 피드백 통계 증분 (fire-and-forget)
  */
 export function trackFeedbackStats(

@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { adminPath } from '@/lib/admin-path'
 
 export interface AdminUser {
   id: string
@@ -58,7 +59,7 @@ export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
     try {
       await fetch('/api/admin/auth/logout', { method: 'POST' })
       setAdmin(null)
-      router.push('/admin/login')
+      router.push(adminPath('/login'))
     }
     catch (error) {
       console.error('Admin logout error:', error)

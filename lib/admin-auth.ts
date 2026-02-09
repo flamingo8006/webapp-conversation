@@ -9,6 +9,8 @@ export interface AdminJWTPayload {
   loginId: string
   name: string
   role: 'super_admin' | 'admin'
+  groupId: string | null // Phase 14
+  groupRole: string // Phase 14
   type: 'admin' // 일반 사용자 JWT와 구분
   iat: number
   exp: number
@@ -50,6 +52,8 @@ export async function signAdminToken(admin: AdminPublic): Promise<string> {
     loginId: admin.loginId,
     name: admin.name,
     role: admin.role,
+    groupId: admin.groupId || null,
+    groupRole: admin.groupRole || 'member',
     type: 'admin',
   } as any)
     .setProtectedHeader({ alg: 'RS256' })
@@ -215,4 +219,66 @@ export function getActorInfo(admin: AdminJWTPayload) {
     actorName: admin.name,
     actorRole: admin.role,
   }
+}
+
+/**
+ * Phase 14: 관리자가 볼 수 있는 앱 필터 조건 반환
+ * - super_admin: 전체
+ * - admin (그룹 소속): 같은 그룹의 앱 + 본인이 생성한 앱
+ * - admin (그룹 미소속): 본인이 생성한 앱만
+ */
+export async function getAdminVisibleAppIds(admin: AdminJWTPayload): Promise<string[] | null> {
+  if (admin.role === 'super_admin') {
+    return null // null = 전체 접근
+  }
+
+  const { adminRepository } = await import('./repositories/admin')
+  const adminData = await adminRepository.getAdminById(admin.sub)
+
+  if (!adminData?.groupId) {
+    // 그룹 미소속: 본인이 생성한 앱만
+    const prismaModule = await import('./prisma')
+    const prisma = prismaModule.default
+    const apps = await prisma.chatbotApp.findMany({
+      where: { createdBy: admin.sub, isActive: true },
+      select: { id: true },
+    })
+    return apps.map(a => a.id)
+  }
+
+  // 그룹 소속: 같은 그룹의 앱 + 본인이 생성한 앱
+  const prismaModule = await import('./prisma')
+  const prisma = prismaModule.default
+  const apps = await prisma.chatbotApp.findMany({
+    where: {
+      isActive: true,
+      OR: [
+        { groupId: adminData.groupId },
+        { createdBy: admin.sub },
+      ],
+    },
+    select: { id: true },
+  })
+  return apps.map(a => a.id)
+}
+
+/**
+ * Phase 14: 관리자가 특정 앱에 접근 가능한지 확인
+ */
+export async function canAdminAccessApp(
+  admin: AdminJWTPayload,
+  appCreatedBy: string | null,
+  appGroupId: string | null,
+): Promise<boolean> {
+  if (admin.role === 'super_admin') { return true }
+  if (appCreatedBy === admin.sub) { return true }
+
+  // 그룹 기반 접근 체크
+  if (appGroupId) {
+    const { adminRepository } = await import('./repositories/admin')
+    const adminData = await adminRepository.getAdminById(admin.sub)
+    if (adminData?.groupId === appGroupId) { return true }
+  }
+
+  return false
 }

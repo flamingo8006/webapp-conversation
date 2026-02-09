@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { requireAdminAuth } from '@/lib/admin-auth'
+import { requireAdminAuth, getAdminVisibleAppIds } from '@/lib/admin-auth'
 import { usageStatsRepository } from '@/lib/repositories/usage-stats'
 import { parsePositiveInt } from '@/lib/validation'
 import { errorCapture } from '@/lib/error-capture'
@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger'
 
 // 통계 개요 조회
 // super_admin: 전체 통계
-// admin: 본인이 생성한 챗봇의 통계만
+// admin: 그룹 기반 필터
 export async function GET(request: NextRequest) {
   try {
     const admin = await requireAdminAuth(request)
@@ -23,14 +23,19 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const days = parsePositiveInt(searchParams.get('days'), 7)
 
-    // super_admin은 전체, 일반 admin은 본인 앱만
-    const createdBy = admin.role === 'super_admin' ? null : admin.sub
+    // 그룹 기반 앱 ID 필터
+    const visibleAppIds = await getAdminVisibleAppIds(admin)
 
     const [overview, appRanking, realTime] = await Promise.all([
-      usageStatsRepository.getOverview(days, createdBy),
-      usageStatsRepository.getAppRanking(days, 10, createdBy),
-      usageStatsRepository.getRealTimeStats(createdBy),
+      usageStatsRepository.getOverview(days, null, visibleAppIds),
+      usageStatsRepository.getAppRanking(days, 10, null, visibleAppIds),
+      usageStatsRepository.getRealTimeStats(null, visibleAppIds),
     ])
+
+    // super_admin이 아니면 메시지 내용 제거 (개인정보 보호)
+    if (admin.role !== 'super_admin') {
+      realTime.recentMessages = []
+    }
 
     return NextResponse.json({
       overview,

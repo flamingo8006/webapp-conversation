@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import Toast from '@/app/components/base/toast'
+import { adminPath } from '@/lib/admin-path'
 import type { AppConfig } from '@/hooks/use-app'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,13 +13,20 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+interface AdminGroup {
+  id: string
+  name: string
+}
 
 interface AppFormProps {
   app?: AppConfig
   mode: 'create' | 'edit'
+  groups?: AdminGroup[]
 }
 
-export function AppForm({ app, mode }: AppFormProps) {
+export function AppForm({ app, mode, groups = [] }: AppFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -40,6 +48,8 @@ export function AppForm({ app, mode }: AppFormProps) {
     requireAuth: app?.requireAuth ?? true,
     allowAnonymous: app?.allowAnonymous ?? false,
     maxAnonymousMsgs: app?.maxAnonymousMsgs || 0,
+    // Phase 14: 그룹
+    groupId: app?.groupId || '',
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -73,6 +83,10 @@ export function AppForm({ app, mode }: AppFormProps) {
       if (mode === 'edit' && !payload.apiKey) {
         delete payload.apiKey
       }
+      // groupId 빈 문자열은 null로 변환
+      if (!payload.groupId) {
+        payload.groupId = null
+      }
 
       const response = await fetch(url, {
         method,
@@ -90,7 +104,7 @@ export function AppForm({ app, mode }: AppFormProps) {
         message: mode === 'create' ? '챗봇이 생성되었습니다.' : '챗봇이 수정되었습니다.',
       })
 
-      router.push('/admin/apps')
+      router.push(adminPath('/apps'))
     }
     catch (error: any) {
       console.error('Failed to save app:', error)
@@ -279,6 +293,31 @@ export function AppForm({ app, mode }: AppFormProps) {
                   숫자가 작을수록 먼저 표시됩니다
                 </p>
               </div>
+
+              {groups.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="groupId">소속 그룹</Label>
+                  <Select
+                    value={formData.groupId}
+                    onValueChange={v => setFormData(prev => ({ ...prev, groupId: v === '_none' ? '' : v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="그룹 선택 (선택사항)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">없음</SelectItem>
+                      {groups.map(group => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    그룹에 배정하면 해당 그룹의 관리자가 이 챗봇을 함께 관리할 수 있습니다.
+                  </p>
+                </div>
+              )}
 
               <div className="flex items-center space-x-2">
                 <Checkbox

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, Edit, Trash2, Key, UserCheck, UserX, RefreshCw, Lock, Unlock } from 'lucide-react'
 import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
+import { adminPath } from '@/lib/admin-path'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -40,6 +41,8 @@ interface Admin {
   department: string | null
   role: string
   isActive: boolean
+  groupId: string | null
+  groupRole: string
   loginAttempts: number
   lockedUntil: string | null
   lastLoginAt: string | null
@@ -53,12 +56,18 @@ interface AdminCounts {
   locked: number
 }
 
+interface AdminGroup {
+  id: string
+  name: string
+}
+
 export default function AdminsPage() {
   const { isSuperAdmin } = useAdminAuth()
   const router = useRouter()
   const { toast } = useToast()
   const [admins, setAdmins] = useState<Admin[]>([])
   const [counts, setCounts] = useState<AdminCounts>({ total: 0, active: 0, superAdmins: 0, locked: 0 })
+  const [groups, setGroups] = useState<AdminGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [resetPasswordId, setResetPasswordId] = useState<string | null>(null)
@@ -69,10 +78,11 @@ export default function AdminsPage() {
 
   useEffect(() => {
     if (!isSuperAdmin) {
-      router.push('/admin')
+      router.push(adminPath())
       return
     }
     fetchAdmins()
+    fetchGroups()
   }, [isSuperAdmin, router])
 
   const fetchAdmins = async () => {
@@ -90,6 +100,22 @@ export default function AdminsPage() {
     finally {
       setLoading(false)
     }
+  }
+
+  const fetchGroups = async () => {
+    try {
+      const res = await fetch('/api/admin/groups')
+      if (res.ok) {
+        const data = await res.json()
+        setGroups(data.groups || [])
+      }
+    }
+    catch {}
+  }
+
+  const getGroupName = (groupId: string | null) => {
+    if (!groupId) { return '-' }
+    return groups.find(g => g.id === groupId)?.name || '-'
   }
 
   const handleDelete = async () => {
@@ -215,7 +241,7 @@ export default function AdminsPage() {
             새로고침
           </Button>
           <Button asChild>
-            <Link href="/admin/admins/new">
+            <Link href={adminPath('/admins/new')}>
               <Plus className="mr-2 h-4 w-4" />
               관리자 추가
             </Link>
@@ -281,6 +307,7 @@ export default function AdminsPage() {
                       <TableHead>로그인 ID</TableHead>
                       <TableHead>이름</TableHead>
                       <TableHead>부서</TableHead>
+                      <TableHead>소속 그룹</TableHead>
                       <TableHead>역할</TableHead>
                       <TableHead>상태</TableHead>
                       <TableHead>최근 로그인</TableHead>
@@ -293,6 +320,9 @@ export default function AdminsPage() {
                         <TableCell className="font-medium">{admin.loginId}</TableCell>
                         <TableCell>{admin.name}</TableCell>
                         <TableCell>{admin.department || '-'}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {getGroupName(admin.groupId)}
+                        </TableCell>
                         <TableCell>
                           <Badge variant={admin.role === 'super_admin' ? 'default' : 'secondary'}>
                             {admin.role === 'super_admin' ? '슈퍼관리자' : '관리자'}
@@ -349,7 +379,7 @@ export default function AdminsPage() {
                               <Key className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/admin/admins/${admin.id}/edit`}>
+                              <Link href={adminPath(`/admins/${admin.id}/edit`)}>
                                 <Edit className="h-4 w-4" />
                               </Link>
                             </Button>

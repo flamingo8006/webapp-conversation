@@ -1,6 +1,16 @@
 import prisma from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 
+/** 로컬 날짜를 UTC 자정 Date 객체로 변환 (PostgreSQL DATE 타입 호환) */
+function toUTCDate(d: Date): Date {
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+}
+
+/** 로컬 날짜의 UTC 끝 시간 (23:59:59.999) */
+function toUTCEndOfDay(d: Date): Date {
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999))
+}
+
 export interface StatsUpdateInput {
   date: Date
   appId?: string | null
@@ -18,8 +28,7 @@ export interface StatsUpdateInput {
 export const usageStatsRepository = {
   // 일별 통계 업데이트 (upsert)
   async incrementStats(input: StatsUpdateInput) {
-    const dateOnly = new Date(input.date)
-    dateOnly.setHours(0, 0, 0, 0)
+    const dateOnly = toUTCDate(input.date)
 
     return prisma.dailyUsageStats.upsert({
       where: {
@@ -60,8 +69,7 @@ export const usageStatsRepository = {
 
   // 오늘 통계 가져오기
   async getTodayStats(appId?: string) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const today = toUTCDate(new Date())
 
     const where: Prisma.DailyUsageStatsWhereInput = {
       date: today,
@@ -73,10 +81,11 @@ export const usageStatsRepository = {
 
   // 기간별 통계 가져오기
   // createdBy: 특정 관리자의 앱만 (null이면 전체 - super_admin용)
-  async getStatsByPeriod(startDate: Date, endDate: Date, appId?: string, createdBy?: string | null) {
+  // visibleAppIds: Phase 14 그룹 기반 필터 (null이면 전체)
+  async getStatsByPeriod(startDate: Date, endDate: Date, appId?: string, createdBy?: string | null, visibleAppIds?: string[] | null) {
     // createdBy가 있으면 해당 관리자의 앱 ID 목록 조회
-    let appIds: string[] | null = null
-    if (createdBy) {
+    let appIds: string[] | null = visibleAppIds || null
+    if (!appIds && createdBy) {
       const apps = await prisma.chatbotApp.findMany({
         where: { createdBy, isActive: true },
         select: { id: true },
@@ -91,8 +100,8 @@ export const usageStatsRepository = {
       },
       ...(appId
         ? { appId }
-        : createdBy
-          ? { appId: { in: appIds || [] } }
+        : appIds
+          ? { appId: { in: appIds } }
           : { appId: null }),
     }
 
@@ -104,17 +113,17 @@ export const usageStatsRepository = {
 
   // 개요 통계 (대시보드용)
   // createdBy: 특정 관리자의 앱만 (null이면 전체 - super_admin용)
-  async getOverview(days: number = 7, createdBy?: string | null) {
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days + 1)
-    startDate.setHours(0, 0, 0, 0)
+  // visibleAppIds: Phase 14 그룹 기반 필터 (null이면 전체)
+  async getOverview(days: number = 7, createdBy?: string | null, visibleAppIds?: string[] | null) {
+    const now = new Date()
+    const startRef = new Date(now)
+    startRef.setDate(startRef.getDate() - days + 1)
+    const startDate = toUTCDate(startRef)
+    const endDate = toUTCEndOfDay(now)
 
-    const endDate = new Date()
-    endDate.setHours(23, 59, 59, 999)
-
-    // createdBy가 있으면 해당 관리자의 앱 ID 목록 조회
-    let appIds: string[] | null = null
-    if (createdBy) {
+    // 앱 ID 목록 결정
+    let appIds: string[] | null = visibleAppIds || null
+    if (!appIds && createdBy) {
       const apps = await prisma.chatbotApp.findMany({
         where: { createdBy, isActive: true },
         select: { id: true },
@@ -123,11 +132,11 @@ export const usageStatsRepository = {
     }
 
     // 전체 통계 (appId = null) 또는 특정 앱들의 통계
-    const stats = createdBy
+    const stats = appIds
       ? await prisma.dailyUsageStats.findMany({
         where: {
           date: { gte: startDate, lte: endDate },
-          appId: { in: appIds || [] },
+          appId: { in: appIds },
         },
         orderBy: { date: 'asc' },
       })
@@ -156,14 +165,15 @@ export const usageStatsRepository = {
 
   // 앱별 통계 (순위용)
   // createdBy: 특정 관리자의 앱만 (null이면 전체 - super_admin용)
-  async getAppRanking(days: number = 7, limit: number = 10, createdBy?: string | null) {
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days + 1)
-    startDate.setHours(0, 0, 0, 0)
+  // visibleAppIds: Phase 14 그룹 기반 필터 (null이면 전체)
+  async getAppRanking(days: number = 7, limit: number = 10, createdBy?: string | null, visibleAppIds?: string[] | null) {
+    const startRef = new Date()
+    startRef.setDate(startRef.getDate() - days + 1)
+    const startDate = toUTCDate(startRef)
 
-    // createdBy가 있으면 해당 관리자의 앱 ID 목록 조회
-    let appIds: string[] | null = null
-    if (createdBy) {
+    // 앱 ID 목록 결정
+    let appIds: string[] | null = visibleAppIds || null
+    if (!appIds && createdBy) {
       const apps = await prisma.chatbotApp.findMany({
         where: { createdBy, isActive: true },
         select: { id: true },
@@ -176,7 +186,7 @@ export const usageStatsRepository = {
       where: {
         date: { gte: startDate },
         appId: { not: null },
-        ...(createdBy ? { appId: { in: appIds || [] } } : {}),
+        ...(appIds ? { appId: { in: appIds } } : {}),
       },
       _sum: {
         totalMessages: true,
@@ -211,13 +221,13 @@ export const usageStatsRepository = {
 
   // 실시간 통계 (DB에서 직접 계산)
   // createdBy: 특정 관리자의 앱만 (null이면 전체 - super_admin용)
-  async getRealTimeStats(createdBy?: string | null) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+  // visibleAppIds: Phase 14 그룹 기반 필터 (null이면 전체)
+  async getRealTimeStats(createdBy?: string | null, visibleAppIds?: string[] | null) {
+    const today = toUTCDate(new Date())
 
-    // createdBy가 있으면 해당 관리자의 앱 ID 목록 조회
-    let appIds: string[] | null = null
-    if (createdBy) {
+    // 앱 ID 목록 결정
+    let appIds: string[] | null = visibleAppIds || null
+    if (!appIds && createdBy) {
       const apps = await prisma.chatbotApp.findMany({
         where: { createdBy, isActive: true },
         select: { id: true },
@@ -225,8 +235,8 @@ export const usageStatsRepository = {
       appIds = apps.map(a => a.id)
     }
 
-    const appFilter = createdBy ? { appId: { in: appIds || [] } } : {}
-    const sessionAppFilter = createdBy ? { session: { appId: { in: appIds || [] } } } : {}
+    const appFilter = appIds ? { appId: { in: appIds } } : {}
+    const sessionAppFilter = appIds ? { session: { appId: { in: appIds } } } : {}
 
     const [todaySessions, todayMessages, activeApps, recentMessages] = await Promise.all([
       prisma.chatSession.count({
@@ -236,10 +246,10 @@ export const usageStatsRepository = {
         where: { createdAt: { gte: today }, ...sessionAppFilter },
       }),
       prisma.chatbotApp.count({
-        where: { isActive: true, ...(createdBy ? { createdBy } : {}) },
+        where: { isActive: true, ...(appIds ? { id: { in: appIds } } : {}) },
       }),
       prisma.chatMessage.findMany({
-        where: { createdAt: { gte: today }, ...sessionAppFilter },
+        where: { createdAt: { gte: today }, role: 'user', ...sessionAppFilter },
         orderBy: { createdAt: 'desc' },
         take: 10,
         include: {
@@ -268,10 +278,8 @@ export const usageStatsRepository = {
 
   // 통계 재계산 (배치용)
   async recalculateStats(date: Date) {
-    const startOfDay = new Date(date)
-    startOfDay.setHours(0, 0, 0, 0)
-    const endOfDay = new Date(date)
-    endOfDay.setHours(23, 59, 59, 999)
+    const startOfDay = toUTCDate(date)
+    const endOfDay = toUTCEndOfDay(date)
 
     // 앱별 통계 계산
     const apps = await prisma.chatbotApp.findMany({

@@ -54,6 +54,42 @@ async function main() {
     console.log('Super admin account already exists')
   }
 
+  // Phase 14: ITC 그룹 생성
+  const existingGroup = await prisma.adminGroup.findUnique({
+    where: { name: 'ITC' },
+  })
+
+  if (!existingGroup) {
+    const group = await prisma.adminGroup.create({
+      data: {
+        name: 'ITC',
+        description: '정보통신팀',
+        isActive: true,
+      },
+    })
+
+    console.log('Created ITC group:', group.id)
+
+    // superadmin을 ITC 그룹의 group_admin으로 배정
+    const superAdmin = await prisma.admin.findUnique({
+      where: { loginId: 'superadmin' },
+    })
+
+    if (superAdmin) {
+      await prisma.admin.update({
+        where: { id: superAdmin.id },
+        data: {
+          groupId: group.id,
+          groupRole: 'group_admin',
+        },
+      })
+      console.log('  Assigned superadmin to ITC group as group_admin')
+    }
+  }
+  else {
+    console.log('ITC group already exists')
+  }
+
   console.log('Seeding completed!')
 }
 

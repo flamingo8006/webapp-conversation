@@ -23,6 +23,9 @@ export interface AppConfig {
   requireAuth?: boolean
   allowAnonymous?: boolean
   maxAnonymousMsgs?: number | null
+  // Phase 14: 그룹 배정
+  groupId?: string | null
+  group?: { id: string, name: string } | null
 }
 
 interface AppContextValue {

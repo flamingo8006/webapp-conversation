@@ -29,6 +29,8 @@ export interface AdminPublic {
   department: string | null
   role: string
   isActive: boolean
+  groupId: string | null
+  groupRole: string
   loginAttempts: number
   lockedUntil: Date | null
   lastLoginAt: Date | null

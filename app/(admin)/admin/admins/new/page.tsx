@@ -1,15 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save } from 'lucide-react'
 import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
+import { adminPath } from '@/lib/admin-path'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+interface AdminGroup {
+  id: string
+  name: string
+}
 
 export default function NewAdminPage() {
   const { isSuperAdmin } = useAdminAuth()
@@ -22,11 +28,20 @@ export default function NewAdminPage() {
   const [email, setEmail] = useState('')
   const [department, setDepartment] = useState('')
   const [role, setRole] = useState<'admin' | 'super_admin'>('admin')
+  const [groupId, setGroupId] = useState('')
+  const [groups, setGroups] = useState<AdminGroup[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    fetch('/api/admin/groups')
+      .then(res => res.ok ? res.json() : { groups: [] })
+      .then(data => setGroups((data.groups || []).filter((g: any) => g.isActive)))
+      .catch(() => {})
+  }, [])
+
   if (!isSuperAdmin) {
-    router.push('/admin')
+    router.push(adminPath())
     return null
   }
 
@@ -57,6 +72,7 @@ export default function NewAdminPage() {
           email: email || undefined,
           department: department || undefined,
           role,
+          groupId: groupId || undefined,
         }),
       })
 
@@ -67,7 +83,7 @@ export default function NewAdminPage() {
         return
       }
 
-      router.push('/admin/admins')
+      router.push(adminPath('/admins'))
     }
     catch {
       setError('관리자 생성 중 오류가 발생했습니다.')
@@ -81,7 +97,7 @@ export default function NewAdminPage() {
     <div className="p-8">
       <div className="mb-8">
         <Button variant="ghost" asChild className="mb-4">
-          <Link href="/admin/admins">
+          <Link href={adminPath('/admins')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             목록으로
           </Link>
@@ -184,6 +200,25 @@ export default function NewAdminPage() {
                 슈퍼관리자는 다른 관리자 계정을 관리할 수 있습니다.
               </p>
             </div>
+
+            {groups.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="groupId">소속 그룹</Label>
+                <Select value={groupId} onValueChange={v => setGroupId(v === '_none' ? '' : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="그룹 선택 (선택사항)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">없음</SelectItem>
+                    {groups.map(group => (
+                      <SelectItem key={group.id} value={group.id}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg">

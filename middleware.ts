@@ -3,6 +3,13 @@ import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/jwt'
 
 /**
+ * 관리자 경로 설정 (Edge Runtime용 - lib/admin-path.ts와 동일한 값 사용)
+ * NEXT_PUBLIC_ 접두사이므로 Edge Runtime에서도 접근 가능
+ */
+const ADMIN_BASE_PATH = process.env.NEXT_PUBLIC_ADMIN_BASE_PATH || 'admin'
+const isCustomAdminPath = ADMIN_BASE_PATH !== 'admin'
+
+/**
  * Request ID 생성 (요청 추적용)
  */
 function generateRequestId(): string {
@@ -75,7 +82,6 @@ const publicPathPrefixes = [
   '/api/admin/auth/login', // Phase 8b: 관리자 로그인 API
   '/api/errors/report', // Phase 8b: 에러 리포트 API
   '/login', // Phase 9a: 안내 페이지로 변경됨
-  '/admin/login', // Phase 8b: 관리자 로그인 페이지
   '/_next',
   '/favicon.ico',
   '/public',
@@ -86,9 +92,11 @@ const publicExactPaths = [
   '/', // Phase 7: 메인 포털 페이지만 익명 접근 허용
 ]
 
-// 관리자 전용 경로
-const adminPaths = [
-  '/admin',
+// 관리자 전용 경로 (커스텀 경로 사용)
+const adminPagePaths = [
+  `/${ADMIN_BASE_PATH}`,
+]
+const adminApiPaths = [
   '/api/admin',
 ]
 
@@ -99,6 +107,63 @@ export async function middleware(request: NextRequest) {
   // 공개 경로는 통과 (prefix 매칭 또는 정확히 일치)
   if (publicPathPrefixes.some(path => pathname.startsWith(path))
     || publicExactPaths.includes(pathname)) {
+    return nextWithRequestId(request, requestId)
+  }
+
+  // 커스텀 관리자 경로가 설정된 경우, 기본 /admin 경로 접근 차단 (API 제외)
+  if (isCustomAdminPath && (pathname === '/admin' || pathname.startsWith('/admin/')) && !pathname.startsWith('/api/admin')) {
+    return new NextResponse('Not Found', { status: 404 })
+  }
+
+  // 관리자 페이지 경로 처리 (커스텀 경로 → 내부 /admin으로 rewrite)
+  if (adminPagePaths.some(path => pathname === path || pathname.startsWith(`${path}/`))) {
+    // IP 화이트리스트 체크
+    const allowedIps = process.env.ADMIN_ALLOWED_IPS || ''
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown'
+
+    if (!isIpAllowedSimple(clientIp, allowedIps)) {
+      return new NextResponse('Forbidden: IP not allowed', { status: 403 })
+    }
+
+    // 로그인 페이지는 인증 없이 rewrite
+    const isLoginPage = pathname === `/${ADMIN_BASE_PATH}/login`
+
+    // 로그인 페이지가 아닌 경우 admin_token 쿠키 확인
+    if (!isLoginPage) {
+      const adminToken = request.cookies.get('admin_token')?.value
+      if (!adminToken) {
+        return NextResponse.redirect(new URL(`/${ADMIN_BASE_PATH}/login`, request.url))
+      }
+    }
+
+    // 커스텀 경로 → 내부 /admin 경로로 rewrite
+    if (isCustomAdminPath) {
+      const internalPath = pathname.replace(`/${ADMIN_BASE_PATH}`, '/admin')
+      const url = request.nextUrl.clone()
+      url.pathname = internalPath
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set('x-request-id', requestId)
+      return NextResponse.rewrite(url, {
+        request: { headers: requestHeaders },
+      })
+    }
+
+    return nextWithRequestId(request, requestId)
+  }
+
+  // 관리자 API 경로 처리
+  if (adminApiPaths.some(path => pathname.startsWith(path))) {
+    const allowedIps = process.env.ADMIN_ALLOWED_IPS || ''
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown'
+
+    if (!isIpAllowedSimple(clientIp, allowedIps)) {
+      return new NextResponse('Forbidden: IP not allowed', { status: 403 })
+    }
+
     return nextWithRequestId(request, requestId)
   }
 
@@ -171,31 +236,6 @@ export async function middleware(request: NextRequest) {
     }
     // 인증 실패
     return new NextResponse('Unauthorized', { status: 401 })
-  }
-
-  // Phase 8b: 관리자 경로 처리 (일반 인증보다 먼저 체크)
-  if (adminPaths.some(path => pathname.startsWith(path))) {
-    // Phase 9b: 관리자 페이지 IP 화이트리스트 체크
-    const allowedIps = process.env.ADMIN_ALLOWED_IPS || ''
-    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || request.headers.get('x-real-ip')
-      || 'unknown'
-
-    if (!isIpAllowedSimple(clientIp, allowedIps)) {
-      return new NextResponse('Forbidden: IP not allowed', { status: 403 })
-    }
-
-    // API는 별도 인증 체크 (admin-auth.ts에서 처리)
-    if (pathname.startsWith('/api/admin')) {
-      return nextWithRequestId(request, requestId)
-    }
-    // 관리자 페이지는 admin_token 쿠키로 인증
-    const adminToken = request.cookies.get('admin_token')?.value
-    if (!adminToken) {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
-    // admin_token 검증은 AdminAuthProvider에서 처리
-    return nextWithRequestId(request, requestId)
   }
 
   // 일반 경로: 쿠키 또는 Authorization 헤더에서 토큰 확인

@@ -1,16 +1,16 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { requireAdminAuth } from '@/lib/admin-auth'
+import { requireAdminAuth, getAdminVisibleAppIds } from '@/lib/admin-auth'
 import { errorCapture } from '@/lib/error-capture'
 import { logger } from '@/lib/logger'
+import prisma from '@/lib/prisma'
 import {
-  listChatbotApps,
   createChatbotApp,
 } from '@/lib/repositories/chatbot-app'
 
 // GET - 챗봇 목록 조회
 // super_admin: 전체 챗봇 조회
-// admin: 본인이 생성한 챗봇만 조회
+// admin: 같은 그룹의 챗봇 + 본인이 생성한 챗봇
 export async function GET(request: NextRequest) {
   const admin = await requireAdminAuth(request)
 
@@ -22,10 +22,23 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // super_admin은 전체, 일반 admin은 본인 챗봇만
-    const createdBy = admin.role === 'super_admin' ? null : admin.sub
-    const apps = await listChatbotApps(createdBy)
-    return NextResponse.json(apps)
+    const visibleAppIds = await getAdminVisibleAppIds(admin)
+
+    const apps = await prisma.chatbotApp.findMany({
+      where: {
+        isActive: true,
+        ...(visibleAppIds ? { id: { in: visibleAppIds } } : {}),
+      },
+      include: {
+        group: { select: { id: true, name: true } },
+      },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    })
+
+    // apiKeyEncrypted 제거
+    const result = apps.map(({ apiKeyEncrypted, deletedAt, deletedBy, updatedAt, updatedBy, ...app }) => app)
+
+    return NextResponse.json(result)
   }
   catch (error) {
     logger.apiError(request, 'Failed to list apps', { error })
@@ -65,6 +78,7 @@ export async function POST(request: NextRequest) {
       requireAuth,
       allowAnonymous,
       maxAnonymousMsgs,
+      groupId,
     } = body
 
     // 필수 필드 검증
@@ -96,6 +110,7 @@ export async function POST(request: NextRequest) {
       requireAuth,
       allowAnonymous,
       maxAnonymousMsgs: parsedMaxAnonymousMsgs,
+      groupId: groupId || undefined,
       createdBy: admin.sub,
     })
 

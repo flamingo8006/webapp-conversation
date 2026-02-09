@@ -91,6 +91,14 @@ const SimpleChat: FC<ISimpleChatProps> = ({
     }
   }, [chatList])
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
+    }
+  }, [query])
+
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setQuery(value)
@@ -299,7 +307,7 @@ const SimpleChat: FC<ISimpleChatProps> = ({
               <Textarea
                 ref={textareaRef}
                 className={cn(
-                  'min-h-[44px] max-h-[120px] border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 pt-2.5 pb-3 pr-20 sm:pr-24 text-sm',
+                  'min-h-[44px] max-h-[200px] border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 pt-2.5 pb-3 pr-20 sm:pr-24 text-sm',
                   visionConfig?.enabled ? 'pl-12 sm:pl-14' : 'pl-3 sm:pl-4',
                 )}
                 value={query}

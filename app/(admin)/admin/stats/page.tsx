@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
 
 interface DailyStats {
   id: string
@@ -66,6 +67,7 @@ interface Overview {
 }
 
 export default function StatsPage() {
+  const { isSuperAdmin } = useAdminAuth()
   const [overview, setOverview] = useState<Overview | null>(null)
   const [appRanking, setAppRanking] = useState<AppRanking[]>([])
   const [realTime, setRealTime] = useState<RealTimeStats | null>(null)
@@ -377,41 +379,149 @@ export default function StatsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>최근 메시지</CardTitle>
-            <CardDescription>오늘 최근 활동</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {realTime && realTime.recentMessages.length > 0
-              ? (
-                <div className="space-y-4">
-                  {realTime.recentMessages.slice(0, 5).map(msg => (
-                    <div key={msg.id} className="border-l-2 border-gray-200 pl-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${
-                          msg.role === 'user' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                        }`}
-                        >
-                          {msg.role === 'user' ? '사용자' : 'AI'}
-                        </span>
-                        <span className="text-xs text-gray-500">{msg.appName}</span>
-                      </div>
-                      <p className="text-sm text-gray-700 truncate mt-1">{msg.content}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(msg.createdAt).toLocaleTimeString('ko-KR')}
-                      </p>
+        {isSuperAdmin
+          ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>최근 메시지</CardTitle>
+                <CardDescription>오늘 최근 활동</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {realTime && realTime.recentMessages.length > 0
+                  ? (
+                    <div className="space-y-4">
+                      {realTime.recentMessages.slice(0, 5).map(msg => (
+                        <div key={msg.id} className="border-l-2 border-purple-300 pl-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">
+                              {msg.appName}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {new Date(msg.createdAt).toLocaleTimeString('ko-KR')}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 truncate mt-1">{msg.content}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )
-              : (
-                <div className="text-center py-8 text-gray-500">
-                  오늘 메시지가 없습니다.
-                </div>
-              )}
-          </CardContent>
-        </Card>
+                  )
+                  : (
+                    <div className="text-center py-8 text-gray-500">
+                      오늘 메시지가 없습니다.
+                    </div>
+                  )}
+              </CardContent>
+            </Card>
+          )
+          : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  사용자 유형 분석
+                </CardTitle>
+                <CardDescription>인증/익명 사용 비율</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {trendData.length > 0
+                  ? (() => {
+                    const totalAuth = trendData.reduce((sum, d) => sum + d.authSessions, 0)
+                    const totalAnon = trendData.reduce((sum, d) => sum + d.anonymousSessions, 0)
+                    const totalAll = totalAuth + totalAnon
+                    const uniqueUsersArr = trendData.map(d => d.uniqueUsers)
+                    const avgUsers = uniqueUsersArr.length > 0
+                      ? Math.round(uniqueUsersArr.reduce((a, b) => a + b, 0) / uniqueUsersArr.length)
+                      : 0
+                    const peakUsers = Math.max(...uniqueUsersArr, 0)
+                    const peakDate = trendData.find(d => d.uniqueUsers === peakUsers)
+
+                    const sessionChartData = trendData.map(d => ({
+                      date: `${new Date(d.date).getMonth() + 1}/${new Date(d.date).getDate()}`,
+                      인증: d.authSessions,
+                      익명: d.anonymousSessions,
+                    }))
+
+                    return (
+                      <div className="space-y-5">
+                        {/* 기간 합산 */}
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 mb-2">기간 합산</p>
+                          <div className="flex items-center gap-3 mb-1.5">
+                            <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden flex">
+                              <div
+                                className="h-full bg-blue-500"
+                                style={{ width: `${totalAll > 0 ? (totalAuth / totalAll) * 100 : 0}%` }}
+                              />
+                              <div
+                                className="h-full bg-orange-400"
+                                style={{ width: `${totalAll > 0 ? (totalAnon / totalAll) * 100 : 0}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>
+                              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1" />
+                              인증:
+                              {' '}
+                              <span className="font-medium text-gray-700">{totalAuth}</span>
+                              {totalAll > 0 && ` (${Math.round((totalAuth / totalAll) * 100)}%)`}
+                            </span>
+                            <span>
+                              <span className="inline-block w-2 h-2 rounded-full bg-orange-400 mr-1" />
+                              익명:
+                              {' '}
+                              <span className="font-medium text-gray-700">{totalAnon}</span>
+                              {totalAll > 0 && ` (${Math.round((totalAnon / totalAll) * 100)}%)`}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 일별 추이 차트 */}
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 mb-2">일별 추이</p>
+                          <div className="h-[180px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={sessionChartData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                                <YAxis tick={{ fontSize: 11 }} />
+                                <Tooltip />
+                                <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+                                <Bar dataKey="인증" stackId="a" fill="#3b82f6" />
+                                <Bar dataKey="익명" stackId="a" fill="#fb923c" />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+
+                        {/* 활성 사용자 */}
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 mb-2">활성 사용자</p>
+                          <div className="flex items-center gap-4">
+                            <div className="text-center p-2 bg-blue-50 rounded-lg flex-1">
+                              <p className="text-lg font-bold text-blue-600">{avgUsers}</p>
+                              <p className="text-xs text-gray-500">일평균</p>
+                            </div>
+                            <div className="text-center p-2 bg-purple-50 rounded-lg flex-1">
+                              <p className="text-lg font-bold text-purple-600">{peakUsers}</p>
+                              <p className="text-xs text-gray-500">
+                                피크
+                                {peakDate && ` (${new Date(peakDate.date).getMonth() + 1}/${new Date(peakDate.date).getDate()})`}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()
+                  : (
+                    <div className="text-center py-8 text-gray-500">
+                      데이터가 없습니다.
+                    </div>
+                  )}
+              </CardContent>
+            </Card>
+          )}
       </div>
     </div>
   )

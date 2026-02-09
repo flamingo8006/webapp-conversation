@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
+import { adminPath } from '@/lib/admin-path'
 
 interface AuditLog {
   id: string
@@ -73,7 +74,7 @@ export default function AuditLogsPage() {
   // 슈퍼관리자 권한 체크
   useEffect(() => {
     if (!authLoading && !isSuperAdmin) {
-      router.replace('/admin')
+      router.replace(adminPath())
     }
   }, [authLoading, isSuperAdmin, router])
 

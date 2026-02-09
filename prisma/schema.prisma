@@ -34,6 +34,9 @@ model ChatbotApp {
   allowAnonymous    Boolean  @default(false) @map("allow_anonymous")     // 익명 사용자 허용
   maxAnonymousMsgs  Int?     @map("max_anonymous_msgs")                  // 익명 사용자 최대 메시지 수 (null=무제한)
 
+  // Phase 14: 그룹 배정
+  groupId           String?  @map("group_id")
+
   // 감사 필드
   createdAt       DateTime @default(now()) @map("created_at")
   createdBy       String?  @map("created_by")
@@ -45,7 +48,9 @@ model ChatbotApp {
   // 관계
   sessions        ChatSession[]
   dailyStats      DailyUsageStats[]
+  group           AdminGroup? @relation(fields: [groupId], references: [id])
 
+  @@index([groupId])
   @@map("chatbot_apps")
 }
 
@@ -110,6 +115,26 @@ model ChatMessage {
   @@map("chat_messages")
 }
 
+// 관리자 그룹 테이블 (Phase 14)
+model AdminGroup {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String?  @map("created_by")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedBy   String?  @map("updated_by")
+
+  // 관계
+  members     Admin[]
+  apps        ChatbotApp[]
+
+  @@index([name])
+  @@map("admin_groups")
+}
+
 // 관리자 테이블 (Phase 8b)
 model Admin {
   id            String   @id @default(cuid())
@@ -122,6 +147,10 @@ model Admin {
 
   role          String   @default("admin")  // 'super_admin' | 'admin'
   isActive      Boolean  @default(true) @map("is_active")
+
+  // Phase 14: 그룹 소속
+  groupId       String?  @map("group_id")
+  groupRole     String   @default("member") @map("group_role")  // 'group_admin' | 'member'
 
   // Phase 9b: 로그인 시도 제한
   loginAttempts Int      @default(0) @map("login_attempts")  // 연속 실패 횟수
@@ -138,8 +167,12 @@ model Admin {
   updatedAt     DateTime @updatedAt @map("updated_at")
   updatedBy     String?  @map("updated_by")
 
+  // 관계
+  group         AdminGroup? @relation(fields: [groupId], references: [id])
+
   @@index([loginId])
   @@index([role])
+  @@index([groupId])
   @@map("admins")
 }
 

@@ -157,7 +157,7 @@ const Chat: FC<IChatProps> = ({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
     }
   }, [query])
 
@@ -232,7 +232,7 @@ const Chat: FC<IChatProps> = ({
                 <Textarea
                   ref={textareaRef}
                   className={cn(
-                    'min-h-[44px] max-h-[150px] border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 pr-[100px] py-3 text-base',
+                    'min-h-[44px] max-h-[200px] border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 pr-[100px] py-3 text-base',
                     visionConfig?.enabled && 'pl-12',
                   )}
                   value={query}

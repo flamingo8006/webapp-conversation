@@ -5,7 +5,7 @@ import { ChatClient } from 'dify-client'
 import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
 import { getOrCreateSession, getAnonymousMessageCount, saveMessage, updateSessionConversationId } from '@/lib/repositories/chat-session'
-import { trackMessageStats } from '@/lib/stats-helper'
+import { trackMessageStats, trackSessionStats } from '@/lib/stats-helper'
 import { errorCapture } from '@/lib/error-capture'
 import { logger } from '@/lib/logger'
 
@@ -149,6 +149,11 @@ export async function POST(
       conversation_id: conversationId,
       response_mode: responseMode,
     } = body
+
+    // 새 대화 시작 시 세션 통계 집계
+    if (!conversationId) {
+      trackSessionStats(appId, _isAnonymous)
+    }
 
     // 사용자 메시지 저장 (익명/인증 모두)
     let userMessageId: string | undefined

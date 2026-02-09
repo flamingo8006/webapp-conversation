@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Bot, Plus, List, MessageSquare, Users, AlertTriangle, TrendingUp, ArrowRight } from 'lucide-react'
+import { Bot, Plus, List, MessageSquare, Users, AlertTriangle, TrendingUp, ArrowRight, Zap, ThumbsUp, ThumbsDown, Shield, UserCheck } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
+import { adminPath } from '@/lib/admin-path'
 
 interface DashboardStats {
   totalApps: number
@@ -24,6 +25,19 @@ interface AppRankingItem {
   totalTokens: number
 }
 
+interface TodayDailyStats {
+  authSessions: number
+  anonymousSessions: number
+  totalSessions: number
+  userMessages: number
+  assistantMessages: number
+  totalMessages: number
+  likeFeedbacks: number
+  dislikeFeedbacks: number
+  totalTokens: number
+  uniqueUsers: number
+}
+
 export default function AdminDashboard() {
   const { isSuperAdmin } = useAdminAuth()
 
@@ -37,6 +51,7 @@ export default function AdminDashboard() {
   })
   const [recentActivity, setRecentActivity] = useState<any[]>([])
   const [appRanking, setAppRanking] = useState<AppRankingItem[]>([])
+  const [todayDaily, setTodayDaily] = useState<TodayDailyStats | null>(null)
 
   useEffect(() => {
     fetchStats()
@@ -68,6 +83,44 @@ export default function AdminDashboard() {
         }))
         setRecentActivity(data.realTime?.recentMessages || [])
         setAppRanking(data.appRanking || [])
+
+        // 오늘 날짜의 daily 데이터 추출 (일반 admin 대시보드용)
+        const daily = data.overview?.daily || []
+        const now = new Date()
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+        const todayData = daily.find((d: any) => d.date?.startsWith(todayStr))
+        if (todayData) {
+          setTodayDaily({
+            authSessions: todayData.authSessions || 0,
+            anonymousSessions: todayData.anonymousSessions || 0,
+            totalSessions: todayData.totalSessions || 0,
+            userMessages: todayData.userMessages || 0,
+            assistantMessages: todayData.assistantMessages || 0,
+            totalMessages: todayData.totalMessages || 0,
+            likeFeedbacks: todayData.likeFeedbacks || 0,
+            dislikeFeedbacks: todayData.dislikeFeedbacks || 0,
+            totalTokens: todayData.totalTokens || 0,
+            uniqueUsers: todayData.uniqueUsers || 0,
+          })
+        }
+        else {
+          // DailyUsageStats에 오늘 레코드가 없으면 realTime 데이터로 폴백
+          const rt = data.realTime
+          if (rt && (rt.todaySessions > 0 || rt.todayMessages > 0)) {
+            setTodayDaily({
+              authSessions: 0,
+              anonymousSessions: 0,
+              totalSessions: rt.todaySessions || 0,
+              userMessages: Math.ceil((rt.todayMessages || 0) / 2),
+              assistantMessages: Math.floor((rt.todayMessages || 0) / 2),
+              totalMessages: rt.todayMessages || 0,
+              likeFeedbacks: 0,
+              dislikeFeedbacks: 0,
+              totalTokens: 0,
+              uniqueUsers: 0,
+            })
+          }
+        }
       }
 
       // 에러 통계 (슈퍼관리자만)
@@ -211,51 +264,167 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div>
-              <CardTitle>최근 활동</CardTitle>
-              <CardDescription>오늘 최근 메시지</CardDescription>
-            </div>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/admin/activity" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-                더 보기
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {recentActivity.length > 0
-              ? (
-                <div className="space-y-3">
-                  {recentActivity.slice(0, 4).map((msg: any) => (
-                    <div key={msg.id} className="flex items-start gap-3 p-2 rounded hover:bg-gray-50">
-                      <span className={`text-xs px-1.5 py-0.5 rounded mt-0.5 ${
-                        msg.role === 'user' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                      }`}
-                      >
-                        {msg.role === 'user' ? '사용자' : 'AI'}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-700 truncate">{msg.content}</p>
-                        <p className="text-xs text-gray-400">
-                          {msg.appName}
-                          {' '}
-                          ·
-                          {new Date(msg.createdAt).toLocaleTimeString('ko-KR')}
+        {isSuperAdmin
+          ? (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle>최근 활동</CardTitle>
+                  <CardDescription>오늘 최근 메시지</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href={adminPath('/activity')} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                    더 보기
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {recentActivity.length > 0
+                  ? (
+                    <div className="space-y-3">
+                      {recentActivity.slice(0, 5).map((msg: any) => (
+                        <div key={msg.id} className="flex items-start gap-3 p-2 rounded hover:bg-gray-50">
+                          <span className="text-xs px-1.5 py-0.5 rounded mt-0.5 bg-purple-100 text-purple-700 whitespace-nowrap">
+                            {msg.appName}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-700 truncate">{msg.content}</p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(msg.createdAt).toLocaleTimeString('ko-KR')}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                  : (
+                    <div className="text-center py-8 text-gray-500 text-sm">
+                      오늘 활동이 없습니다.
+                    </div>
+                  )}
+              </CardContent>
+            </Card>
+          )
+          : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  오늘의 상세 현황
+                </CardTitle>
+                <CardDescription>실시간 사용 분석</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {todayDaily
+                  ? (
+                    <div className="space-y-5">
+                      {/* 세션 구성 */}
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                          <UserCheck className="h-4 w-4" />
+                          세션 구성
                         </p>
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-blue-500 rounded-full"
+                              style={{ width: `${todayDaily.totalSessions > 0 ? (todayDaily.authSessions / todayDaily.totalSessions) * 100 : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>
+                            인증:
+                            {' '}
+                            <span className="font-medium text-blue-600">{todayDaily.authSessions}</span>
+                            건
+                            {todayDaily.totalSessions > 0 && ` (${Math.round((todayDaily.authSessions / todayDaily.totalSessions) * 100)}%)`}
+                          </span>
+                          <span>
+                            익명:
+                            {' '}
+                            <span className="font-medium text-gray-600">{todayDaily.anonymousSessions}</span>
+                            건
+                            {todayDaily.totalSessions > 0 && ` (${Math.round((todayDaily.anonymousSessions / todayDaily.totalSessions) * 100)}%)`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 메시지 구성 */}
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                          <MessageSquare className="h-4 w-4" />
+                          메시지 구성
+                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="text-center p-2 bg-blue-50 rounded-lg">
+                            <p className="text-lg font-bold text-blue-600">{todayDaily.userMessages}</p>
+                            <p className="text-xs text-gray-500">사용자</p>
+                          </div>
+                          <div className="text-center p-2 bg-green-50 rounded-lg">
+                            <p className="text-lg font-bold text-green-600">{todayDaily.assistantMessages}</p>
+                            <p className="text-xs text-gray-500">AI 응답</p>
+                          </div>
+                          <div className="text-center p-2 bg-gray-50 rounded-lg">
+                            <p className="text-lg font-bold text-gray-600">
+                              {todayDaily.userMessages > 0
+                                ? `${Math.round((todayDaily.assistantMessages / todayDaily.userMessages) * 100)}%`
+                                : '-'}
+                            </p>
+                            <p className="text-xs text-gray-500">응답률</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 피드백 & 토큰 */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                            <ThumbsUp className="h-4 w-4" />
+                            피드백
+                          </p>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm">
+                              <span className="text-green-600 font-medium">{todayDaily.likeFeedbacks}</span>
+                              {' '}
+                              <ThumbsUp className="h-3 w-3 inline text-green-500" />
+                            </span>
+                            <span className="text-sm">
+                              <span className="text-red-600 font-medium">{todayDaily.dislikeFeedbacks}</span>
+                              {' '}
+                              <ThumbsDown className="h-3 w-3 inline text-red-500" />
+                            </span>
+                            {(todayDaily.likeFeedbacks + todayDaily.dislikeFeedbacks) > 0 && (
+                              <span className="text-xs text-gray-500">
+                                긍정률
+                                {' '}
+                                {Math.round((todayDaily.likeFeedbacks / (todayDaily.likeFeedbacks + todayDaily.dislikeFeedbacks)) * 100)}
+                                %
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                            <Zap className="h-4 w-4" />
+                            토큰 사용량
+                          </p>
+                          <p className="text-lg font-bold text-purple-600">{todayDaily.totalTokens.toLocaleString()}</p>
+                          <p className="text-xs text-gray-500">오늘 사용량</p>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )
-              : (
-                <div className="text-center py-8 text-gray-500 text-sm">
-                  오늘 활동이 없습니다.
-                </div>
-              )}
-          </CardContent>
-        </Card>
+                  )
+                  : (
+                    <div className="text-center py-8 text-gray-500 text-sm">
+                      오늘 데이터가 없습니다.
+                    </div>
+                  )}
+              </CardContent>
+            </Card>
+          )}
+
       </div>
 
       {/* 빠른 액션 */}
@@ -271,7 +440,7 @@ export default function AdminDashboard() {
               className="h-auto p-4 justify-start border-dashed"
               asChild
             >
-              <Link href="/admin/apps/new">
+              <Link href={adminPath('/apps/new')}>
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-blue-100 rounded-lg p-2 mr-3">
                     <Plus className="h-5 w-5 text-blue-600" />
@@ -289,7 +458,7 @@ export default function AdminDashboard() {
               className="h-auto p-4 justify-start border-dashed"
               asChild
             >
-              <Link href="/admin/apps">
+              <Link href={adminPath('/apps')}>
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-purple-100 rounded-lg p-2 mr-3">
                     <List className="h-5 w-5 text-purple-600" />
@@ -307,7 +476,7 @@ export default function AdminDashboard() {
               className="h-auto p-4 justify-start border-dashed"
               asChild
             >
-              <Link href="/admin/stats">
+              <Link href={adminPath('/stats')}>
                 <div className="flex items-center">
                   <div className="flex-shrink-0 bg-green-100 rounded-lg p-2 mr-3">
                     <TrendingUp className="h-5 w-5 text-green-600" />
@@ -326,7 +495,7 @@ export default function AdminDashboard() {
                 className="h-auto p-4 justify-start border-dashed"
                 asChild
               >
-                <Link href="/admin/errors">
+                <Link href={adminPath('/errors')}>
                   <div className="flex items-center">
                     <div className="flex-shrink-0 bg-red-100 rounded-lg p-2 mr-3">
                       <AlertTriangle className="h-5 w-5 text-red-600" />

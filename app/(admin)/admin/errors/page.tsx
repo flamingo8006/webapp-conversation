@@ -20,6 +20,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
+import { adminPath } from '@/lib/admin-path'
 
 interface ErrorLog {
   id: string
@@ -81,7 +82,7 @@ export default function ErrorsPage() {
   // 슈퍼관리자 권한 체크
   useEffect(() => {
     if (!authLoading && !isSuperAdmin) {
-      router.replace('/admin')
+      router.replace(adminPath())
     }
   }, [authLoading, isSuperAdmin, router])
 

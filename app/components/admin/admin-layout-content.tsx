@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/app/components/providers/admin-auth-provider'
+import { adminPath } from '@/lib/admin-path'
 import { AdminSidebar } from './sidebar'
 
 interface AdminLayoutContentProps {
@@ -16,7 +17,7 @@ export function AdminLayoutContent({ children }: AdminLayoutContentProps) {
 
   useEffect(() => {
     if (!loading && !admin) {
-      router.push('/admin/login')
+      router.push(adminPath('/login'))
     }
   }, [admin, loading, router])
 

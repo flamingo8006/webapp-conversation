@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Home, Info, Shield } from 'lucide-react'
 import { useAuth } from '@/app/components/providers/auth-provider'
+import { adminPath } from '@/lib/admin-path'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -66,7 +67,7 @@ export default function LoginPage() {
                 챗봇 관리 기능을 사용하려면 관리자 로그인이 필요합니다.
               </p>
               <Button asChild className="w-full">
-                <Link href="/admin/login">
+                <Link href={adminPath('/login')}>
                   관리자 로그인
                 </Link>
               </Button>

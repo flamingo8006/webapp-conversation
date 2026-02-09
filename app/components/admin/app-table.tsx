@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Plus, Inbox, Loader2 } from 'lucide-react'
 import Toast from '@/app/components/base/toast'
+import { adminPath } from '@/lib/admin-path'
 import type { AppConfig } from '@/hooks/use-app'
 import { PublishModal } from './publish-modal'
 import { Button } from '@/components/ui/button'
@@ -86,7 +87,7 @@ export function AppTable({ apps, onDelete }: AppTableProps) {
             새 챗봇을 추가하여 시작하세요
           </p>
           <Button asChild>
-            <Link href="/admin/apps/new">
+            <Link href={adminPath('/apps/new')}>
               <Plus className="mr-2 h-4 w-4" />
               새 챗봇 추가
             </Link>
@@ -104,6 +105,7 @@ export function AppTable({ apps, onDelete }: AppTableProps) {
             <TableRow>
               <TableHead>챗봇 이름</TableHead>
               <TableHead>설명</TableHead>
+              <TableHead>그룹</TableHead>
               <TableHead>상태</TableHead>
               <TableHead>생성일</TableHead>
               <TableHead className="text-right">액션</TableHead>
@@ -137,6 +139,9 @@ export function AppTable({ apps, onDelete }: AppTableProps) {
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {app.description || '-'}
                   </p>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {(app as any).group?.name || '-'}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">

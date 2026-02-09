@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, User } from 'lucide-react'
+import { adminPath } from '@/lib/admin-path'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -34,7 +35,7 @@ export default function AdminLoginPage() {
         return
       }
 
-      router.push('/admin')
+      router.push(adminPath())
       router.refresh()
     }
     catch {

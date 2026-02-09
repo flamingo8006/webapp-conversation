@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { requireSuperAdmin, getActorInfo } from '@/lib/admin-auth'
 import { adminRepository } from '@/lib/repositories/admin'
+import { adminGroupRepository } from '@/lib/repositories/admin-group'
 import { auditLogger } from '@/lib/audit-logger'
 import { errorCapture } from '@/lib/error-capture'
 import { logger } from '@/lib/logger'
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { loginId, password, name, email, department, role } = body
+    const { loginId, password, name, email, department, role, groupId } = body
 
     // 유효성 검사
     if (!loginId || !password || !name) {
@@ -85,6 +86,11 @@ export async function POST(request: NextRequest) {
       role: role || 'admin',
       createdBy: adminPayload.sub,
     })
+
+    // 그룹 배정
+    if (groupId) {
+      await adminGroupRepository.addMember(groupId, admin.id, 'member')
+    }
 
     // 감사 로그
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
