@@ -228,8 +228,15 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 - [x] 대화 삭제 후 WelcomeScreen 전환 (`setCurrConversationId('-1')`)
 - [x] 사용자 브라우저 테스트 완료 (2026-02-07)
 
-### Phase 10: 에러 핸들링 강화 + 코드 품질 개선 ✅ (10-2 제외)
+### Phase 10: 에러 핸들링 강화 + 코드 품질 개선 ✅
 - [x] Phase 10-1: Next.js Error Boundary 추가 (새 파일 6개)
+- [x] Phase 10-2: API 응답 포맷 통일
+  - 공통 API 응답 헬퍼 생성 (`lib/api-response.ts`)
+  - file-upload: 에러 시 status 200 → 500 수정 (파일 ID 오염 버그 수정)
+  - chat-messages, messages, feedbacks: try-catch + logger + errorCapture 추가
+  - conversations: 에러 시 status 500 추가 + logger
+  - parameters: 의도적 폴백에 logger.apiWarn 추가
+  - 성공 응답 구조는 변경 없음 (프론트엔드 호환성 유지)
 - [x] Phase 10-3: `any` 타입 제거 (TypeScript 강화, `types/dify.ts` 생성)
 - [x] Phase 10-4: 입력값 검증 추가 (`lib/validation.ts` 생성)
 - [x] Phase 10-5: Repository 에러 핸들링 보강
@@ -287,7 +294,7 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 
 ## 🔄 현재 상태
 
-**상태**: Phase 1~14 + 관리자 접근 제어 + 경로 보안 + 채팅 개선 모두 완료
+**상태**: Phase 1~14 + Phase 10-2 + 관리자 접근 제어 + 경로 보안 + 채팅 개선 모두 완료
 
 **상세 계획서**:
 - [`docs/phase10-plan.md`](docs/phase10-plan.md) - 에러 핸들링 강화
@@ -296,19 +303,14 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 - [`docs/phase13-plan.md`](docs/phase13-plan.md) - 보안 검토 (배포 전 진행)
 
 **주요 커밋 이력**:
+- `8375160` 레거시 API 에러 응답 포맷 통일 (Phase 10-2)
 - `09b9d03` 관리자 접근 제어, 피드백 개선, 경로 보안, 통계 버그 수정, Phase 14
 - `73c6c0d` Middleware 헤더 보존 + 세션 관리 버그 수정
-- `fc3d9f8` CLAUDE.md 업데이트 - Phase 8c-3 완료
 - `a701ef0` Phase 10~14 원격 브랜치 머지
 - `cdfb072` Phase 8b/8c/9a/9b 완료
 
 **알려진 버그**:
 - Windows에서 Next.js standalone 빌드 시 symlink 권한 오류 (개발 모드는 정상 동작)
-
-**Phase 10-2 보류 사유**:
-- 프론트/백엔드 응답 구조 동시 수정 필요
-- 수동 브라우저 테스트 없이 검증 불가
-- 선행 조건: 로컬 개발 환경 + E2E 테스트
 
 ---
 
@@ -385,7 +387,7 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 ### 완료: Phase 10 - 에러 핸들링 강화 + 코드 품질 개선 ✅
 - [x] 작업 계획 수립 → [`docs/phase10-plan.md`](docs/phase10-plan.md)
 - [x] Phase 10-1: Next.js Error Boundary 추가
-- [ ] Phase 10-2: API 응답 포맷 통일 (**추후 진행** - 위험도 높음)
+- [x] Phase 10-2: API 응답 포맷 통일 → `8375160`
 - [x] Phase 10-3: `any` 타입 제거 (TypeScript 강화)
 - [x] Phase 10-4: 입력값 검증 추가
 - [x] Phase 10-5: Repository 에러 핸들링 보강
@@ -408,10 +410,9 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
   - 보안 헤더 추가 (Critical)
   - 입력값 검증 강화 5건 (High~Low)
   - IP 스푸핑 완화, CSRF, Rate Limiting, Dify URL 검증 (추후)
-- [ ] Phase 10-2: API 응답 포맷 통일 (브라우저 테스트 필수)
 - [ ] E2E 테스트 작성 (Playwright)
 - [ ] 성능 최적화 (DB 쿼리, 번들 사이즈)
-- [x] 에러 핸들링 강화 → Phase 10 완료
+- [x] 에러 핸들링 강화 → Phase 10 완료 (10-2 포함)
 - [x] 로깅 시스템 → Phase 12 완료
 
 ### 우선순위 3: 레거시 인증 연동 후 테스트
@@ -504,6 +505,7 @@ webapp-conversation/
 │   ├── admin-auth.ts           # 관리자 인증 유틸리티
 │   ├── logger.ts               # 구조화된 로거
 │   ├── stats-helper.ts         # 통계 자동 집계 헬퍼
+│   ├── api-response.ts          # 공통 API 응답 헬퍼
 │   ├── validation.ts           # 입력값 검증
 │   └── repositories/
 │       ├── chatbot-app.ts      # 챗봇 앱 Repository
@@ -839,8 +841,7 @@ npm run start
 ---
 
 **마지막 업데이트**: 2026-02-09
+**Phase 10-2 완료**: API 응답 포맷 통일 (에러 status 코드 수정, try-catch 추가, 공통 헬퍼)
 **Phase 14 완료**: 관리자 그룹 관리 + 역할별 접근 제어
 **관리자 경로 보안**: `NEXT_PUBLIC_ADMIN_BASE_PATH` 환경변수로 URL 변경
-**채팅 UI 개선**: 피드백 401 수정, 복사 버튼, 입력창 자동 확장
-**통계 버그 수정**: 타임존 날짜 불일치 해결 (`toUTCDate` 헬퍼)
 **다음 단계**: Phase 13 보안 검토 (배포 전 진행 예정)
