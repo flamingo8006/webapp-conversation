@@ -402,12 +402,7 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 - [x] Phase 12-3: 라이브러리에 로거 적용 (7개 파일) → `c3b5b70`
 - [x] Phase 12-4: 미들웨어에 Request ID 추가 → `30100f3`
 
-### 우선순위 1: 추가 기능
-- [ ] 사용자/그룹 관리 (User, Department, UserRole 추가) - 레거시 시스템 구조 확인 후
-- [x] 통계 데이터 자동 집계 → Phase 11-1 완료
-- [x] 에러 캡처 자동화 → Phase 11-2 완료
-
-### 우선순위 2: 프로덕션 배포 전 (기능 개발 완료 후 진행)
+### 우선순위 1: 프로덕션 배포 전 (기능 개발 완료 후 진행)
 - [ ] Phase 13: 보안 검토 및 취약점 수정 → [`docs/phase13-plan.md`](docs/phase13-plan.md)
   - Embed 토큰 API 인증 (Critical)
   - 보안 헤더 추가 (Critical)
