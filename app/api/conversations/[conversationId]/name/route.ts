@@ -20,8 +20,8 @@ export async function POST(request: NextRequest, { params }: {
     return NextResponse.json(data)
   }
   catch (error) {
-    // Multi-App 환경에서는 전역 client가 작동하지 않을 수 있음
-    // 에러를 조용히 처리하고 빈 응답 반환
+    // Multi-App 환경에서는 전역 client가 작동하지 않을 수 있음 — 200 반환은 의도적
+    // (레거시 API 실패가 Multi-App에서는 정상 시나리오)
     logger.apiWarn(request, 'Failed to rename conversation', { error })
     return NextResponse.json({ name: '' }, { status: 200 })
   }
