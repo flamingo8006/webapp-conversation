@@ -18,33 +18,15 @@ export function FloatingButton({ onClick, unreadCount = 0, iconUrl, appName }: F
         onClick={onClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="relative w-16 h-16 bg-blue-600 hover:bg-blue-700 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center group"
+        className="relative w-16 h-16 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center justify-center group overflow-hidden"
         aria-label="Open chat"
       >
         {/* 아이콘 */}
-        {iconUrl
-          ? (
-            <img
-              src={iconUrl}
-              alt={appName || 'Chat'}
-              className="w-10 h-10 rounded-full"
-            />
-          )
-          : (
-            <svg
-              className="w-8 h-8 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
-          )}
+        <img
+          src={iconUrl || '/icons/chat_floating_button.svg'}
+          alt={appName || 'Chat'}
+          className="w-full h-full object-cover scale-[1.25]"
+        />
 
         {/* 읽지 않은 메시지 배지 */}
         {unreadCount > 0 && (

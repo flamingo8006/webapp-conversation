@@ -290,11 +290,32 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 - [x] `trackSessionStats` / `trackFeedbackStats` 호출 추가
 - [x] 프론트엔드 날짜 매칭: `toISOString()` → 로컬 날짜 문자열
 
+### 레거시 인증 연동 (2026-02-10) ✅
+- [x] embed-token API Key 검증 활성화 (`EMBED_API_KEY` 환경변수)
+  - 미설정 시 503, 불일치 시 401
+- [x] JWT 만료 시간 통일 (`JWT_EXPIRY_HOURS` 환경변수, 기본값 8시간)
+  - `signToken()`, `auth_token` 쿠키, `embed_auth_token` 쿠키 모두 동일 값 사용
+- [x] `/api/auth/token` form data + 302 리다이렉트 지원
+  - `application/x-www-form-urlencoded` → 쿠키 설정 + 302 `/` 리다이렉트
+  - `application/json` → 기존 JSON 응답 유지
+- [x] Mock 모드 프로덕션 차단 (`NODE_ENV=production` 시 mock 거부)
+- [x] `verifyUserWithLegacy()` 함수 추가 (HMAC 서명 검증 후 사용자 확인)
+- [x] HMAC 서명 검증 유틸리티 (`lib/hmac.ts`)
+  - HMAC-SHA256, timing-safe 비교, 5분 타임스탬프 유효
+- [x] `/api/auth/embed-verify` API (HMAC 서명 검증 + 사용자 확인 + JWT 발급)
+- [x] Embed 페이지 3모드 지원 (HMAC/JWT/익명)
+  - 버그 수정: `/api/admin/apps/${appId}` → `/api/apps/${appId}/info`
+- [x] Middleware 개선: embed 경로에 사용자 헤더 주입, HMAC/익명 통과
+- [x] info API: 인증 사용자는 비공개 앱도 접근 허용
+- [x] i18n: embed.authFailed, embed.verifying 키 추가
+- [x] 레거시 연동 가이드: `docs/legacy-integration-guide.md`
+- [x] HMAC 테스트 스크립트: `scripts/generate-embed-hmac.ts`
+
 ---
 
 ## 🔄 현재 상태
 
-**상태**: Phase 1~14 + Phase 10-2 + 관리자 접근 제어 + 경로 보안 + 채팅 개선 모두 완료
+**상태**: Phase 1~14 + Phase 10-2 + 관리자 접근 제어 + 경로 보안 + 채팅 개선 + 레거시 인증 연동 모두 완료
 
 **상세 계획서**:
 - [`docs/phase10-plan.md`](docs/phase10-plan.md) - 에러 핸들링 강화
@@ -415,9 +436,11 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 - [x] 에러 핸들링 강화 → Phase 10 완료 (10-2 포함)
 - [x] 로깅 시스템 → Phase 12 완료
 
-### 우선순위 3: 레거시 인증 연동 후 테스트
-- [ ] **인증형 임베드 테스트** - `npx ts-node scripts/generate-embed-token.ts` 사용
-- [ ] 레거시 인증 시스템 연동 테스트
+### 완료: 레거시 인증 연동 ✅
+- [x] **레거시 인증 연동 구현** - embed-token API Key, HMAC 서명, form POST 리다이렉트
+- [x] **레거시 연동 가이드** - `docs/legacy-integration-guide.md` (Java 예시 포함)
+- [ ] **인증형 임베드 테스트** - `npx ts-node scripts/generate-embed-hmac.ts` 사용
+- [ ] 레거시 인증 시스템 연동 테스트 (실제 레거시 서버 연동)
 
 ---
 
@@ -500,7 +523,8 @@ webapp-conversation/
 │   ├── encryption.ts           # API Key 암호화
 │   ├── session-manager.ts      # 클라이언트 세션 관리
 │   ├── auth-utils.ts           # 인증 유틸리티
-│   ├── legacy-auth.ts          # 레거시 인증 연동
+│   ├── legacy-auth.ts          # 레거시 인증 연동 + 사용자 확인
+│   ├── hmac.ts                 # HMAC 서명 검증 유틸리티
 │   ├── admin-path.ts           # 관리자 URL 경로 헬퍼
 │   ├── admin-auth.ts           # 관리자 인증 유틸리티
 │   ├── logger.ts               # 구조화된 로거
@@ -563,6 +587,12 @@ ADMIN_ALLOWED_IPS=               # IP 화이트리스트 (쉼표 구분, 빈값=
 NEXT_PUBLIC_ADMIN_BASE_PATH=dgai-mgmt  # 관리자 URL 경로 (기본값: admin)
                                         # 예: dgai-mgmt → /dgai-mgmt/login
                                         # 설정 시 /admin 직접 접근 차단 (404)
+
+# 레거시 인증 연동
+JWT_EXPIRY_HOURS=8                       # JWT + 쿠키 통일 만료 시간 (기본값: 8시간)
+EMBED_API_KEY=dev-test-api-key-change-in-production  # embed-token API 인증 키
+EMBED_HMAC_SECRET=dev-test-hmac-secret-change-in-production  # HMAC 서명 공유 비밀키
+LEGACY_VERIFY_API_URL=https://portal.dgist.ac.kr/api/auth/verify-user  # 레거시 사용자 확인 API
 ```
 
 ### JWT 키 생성 방법
@@ -840,8 +870,7 @@ npm run start
 
 ---
 
-**마지막 업데이트**: 2026-02-09
-**Phase 10-2 완료**: API 응답 포맷 통일 (에러 status 코드 수정, try-catch 추가, 공통 헬퍼)
-**Phase 14 완료**: 관리자 그룹 관리 + 역할별 접근 제어
-**관리자 경로 보안**: `NEXT_PUBLIC_ADMIN_BASE_PATH` 환경변수로 URL 변경
-**다음 단계**: Phase 13 보안 검토 (배포 전 진행 예정)
+**마지막 업데이트**: 2026-02-10
+**레거시 인증 연동 완료**: embed-token API Key 검증, JWT 만료 통일, form POST 리다이렉트, HMAC 서명 검증, embed-verify API
+**레거시 연동 가이드**: `docs/legacy-integration-guide.md` (Java 예시 포함)
+**다음 단계**: Phase 13 보안 검토 (배포 전 진행 예정), 레거시 서버 실제 연동 테스트

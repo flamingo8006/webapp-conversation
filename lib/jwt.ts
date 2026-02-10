@@ -14,6 +14,15 @@ export interface JWTPayload {
   aud: string // 대상
 }
 
+// JWT 만료 시간 헬퍼 (환경변수 JWT_EXPIRY_HOURS, 기본값 8시간)
+export function getJwtExpiryHours(): number {
+  return parseInt(process.env.JWT_EXPIRY_HOURS || '8', 10) || 8
+}
+
+export function getJwtExpirySeconds(): number {
+  return getJwtExpiryHours() * 3600
+}
+
 // 환경변수에서 키 로드
 const getPublicKey = async () => {
   const publicKeyPem = process.env.JWT_PUBLIC_KEY!
@@ -50,7 +59,7 @@ export async function signToken(payload: Omit<JWTPayload, 'iat' | 'exp' | 'iss' 
   const token = await new SignJWT({ ...payload } as any)
     .setProtectedHeader({ alg: 'RS256' })
     .setIssuedAt()
-    .setExpirationTime('24h')
+    .setExpirationTime(`${getJwtExpiryHours()}h`)
     .setIssuer(process.env.JWT_ISSUER || 'dgist-auth')
     .setAudience(process.env.JWT_AUDIENCE || 'dgist-chatbot')
     .sign(privateKey)

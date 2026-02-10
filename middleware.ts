@@ -78,6 +78,8 @@ const publicPathPrefixes = [
   '/api/auth/login',
   '/api/auth/verify',
   '/api/auth/token', // Phase 9a: 토큰 처리 API
+  '/api/auth/embed-token', // 레거시 연동: embed JWT 발급 (자체 API Key 인증)
+  '/api/auth/embed-verify', // 레거시 연동: HMAC 서명 검증
   '/api/apps/public',
   '/api/admin/auth/login', // Phase 8b: 관리자 로그인 API
   '/api/errors/report', // Phase 8b: 에러 리포트 API
@@ -207,35 +209,54 @@ export async function middleware(request: NextRequest) {
     return nextWithRequestId(request, requestId)
   }
 
-  // Embed 모드: URL 파라미터로 토큰 전달
+  // Embed 모드: 다양한 인증 방식 지원
   if (pathname.startsWith('/embed/')) {
+    const jwtExpirySeconds = (parseInt(process.env.JWT_EXPIRY_HOURS || '8', 10) || 8) * 3600
+
+    // 1. URL 파라미터로 JWT 토큰 전달 (기존 방식)
     const token = request.nextUrl.searchParams.get('token')
     if (token) {
       const payload = await verifyToken(token)
       if (payload) {
-        // 토큰이 유효하면 세션 쿠키 설정 후 통과
         const embedHeaders = new Headers(request.headers)
         embedHeaders.set('x-request-id', requestId)
+        embedHeaders.set('x-user-id', payload.empNo)
+        embedHeaders.set('x-user-login-id', payload.sub)
+        embedHeaders.set('x-user-name', Buffer.from(payload.name, 'utf-8').toString('base64'))
+        embedHeaders.set('x-user-role', payload.role)
         const response = NextResponse.next({ request: { headers: embedHeaders } })
         response.cookies.set('embed_auth_token', token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'none', // iframe에서 접근 가능하도록
-          maxAge: 60 * 60 * 24, // 24시간
+          sameSite: 'none',
+          maxAge: jwtExpirySeconds,
         })
         return response
       }
     }
-    // embed 쿠키 확인
+
+    // 2. embed 쿠키 확인
     const embedToken = request.cookies.get('embed_auth_token')?.value
     if (embedToken) {
       const payload = await verifyToken(embedToken)
       if (payload) {
-        return nextWithRequestId(request, requestId)
+        const embedHeaders = new Headers(request.headers)
+        embedHeaders.set('x-user-id', payload.empNo)
+        embedHeaders.set('x-user-login-id', payload.sub)
+        embedHeaders.set('x-user-name', Buffer.from(payload.name, 'utf-8').toString('base64'))
+        embedHeaders.set('x-user-role', payload.role)
+        return nextWithRequestId(request, requestId, embedHeaders)
       }
     }
-    // 인증 실패
-    return new NextResponse('Unauthorized', { status: 401 })
+
+    // 3. HMAC 서명 파라미터 → 통과 (페이지에서 embed-verify API 호출)
+    const sig = request.nextUrl.searchParams.get('sig')
+    if (sig) {
+      return nextWithRequestId(request, requestId)
+    }
+
+    // 4. 아무것도 없음 → 통과 (페이지에서 allowAnonymous 확인)
+    return nextWithRequestId(request, requestId)
   }
 
   // 일반 경로: 쿠키 또는 Authorization 헤더에서 토큰 확인
@@ -286,6 +307,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icons/).*)',
   ],
 }

@@ -35,7 +35,7 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
   const media = useBreakpoints()
   const isMobile = media === MediaType.mobile
   const appId = propAppId || APP_ID
-  const hasSetAppConfig = appId && API_KEY
+  const hasSetAppConfig = appId && (propAppId || API_KEY)
 
   // Phase 7: 익명 사용자 세션 관리
   const { sessionId, isReady: isSessionReady } = useSession()

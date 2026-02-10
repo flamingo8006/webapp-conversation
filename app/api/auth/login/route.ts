@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { authenticateWithLegacy } from '@/lib/legacy-auth'
-import { signToken } from '@/lib/jwt'
+import { getJwtExpirySeconds, signToken } from '@/lib/jwt'
 import { errorCapture } from '@/lib/error-capture'
 import { logger } from '@/lib/logger'
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60, // 1시간
+      maxAge: getJwtExpirySeconds(),
       path: '/',
     })
 
