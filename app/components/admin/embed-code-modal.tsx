@@ -24,8 +24,9 @@ type EmbedType = 'fullscreen' | 'floating' | null
 export function EmbedCodeModal({ app, isOpen, onClose }: EmbedCodeModalProps) {
   const [embedType, setEmbedType] = useState<EmbedType>(null)
 
-  // 임베드 코드 생성
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+  // 임베드 코드 생성: 환경변수 우선, 없으면 현재 origin 사용
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+    || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
 
   // 공개 + 익명 허용 챗봇인지 확인
   const isPublicAnonymous = app?.isPublic && app?.allowAnonymous
@@ -45,48 +46,48 @@ export function EmbedCodeModal({ app, isOpen, onClose }: EmbedCodeModalProps) {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
     border: none;
     cursor: pointer;
-    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     z-index: 9998;
     transition: transform 0.3s, box-shadow 0.3s;
+    overflow: hidden;
+    padding: 0;
+    background: transparent;
   }
   #dgist-chatbot-btn:hover {
     transform: scale(1.1);
-    box-shadow: 0 6px 25px rgba(59, 130, 246, 0.5);
-  }
-  #dgist-chatbot-btn svg {
-    width: 28px;
-    height: 28px;
-    color: white;
-    transition: transform 0.3s, opacity 0.2s;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
   }
   #dgist-chatbot-btn .icon-chat,
   #dgist-chatbot-btn .icon-close {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.25);
+    transition: opacity 0.3s, transform 0.3s;
   }
   #dgist-chatbot-btn .icon-close {
     opacity: 0;
-    transform: translate(-50%, -50%) rotate(90deg);
+    transform: scale(1.25) rotate(90deg);
   }
   #dgist-chatbot-btn.active .icon-chat {
     opacity: 0;
-    transform: translate(-50%, -50%) rotate(-90deg);
+    transform: scale(1.25) rotate(-90deg);
   }
   #dgist-chatbot-btn.active .icon-close {
     opacity: 1;
-    transform: translate(-50%, -50%) rotate(0deg);
+    transform: scale(1.25) rotate(0deg);
   }
   #dgist-chatbot-container {
     position: fixed;
-    bottom: 90px;
+    bottom: 95px;
     right: 20px;
     z-index: 9999;
     pointer-events: none;
@@ -139,12 +140,8 @@ export function EmbedCodeModal({ app, isOpen, onClose }: EmbedCodeModalProps) {
 </style>
 
 <button id="dgist-chatbot-btn" onclick="toggleChatbot()">
-  <svg class="icon-chat" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-  </svg>
-  <svg class="icon-close" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-  </svg>
+  <img class="icon-chat" src="${baseUrl}/icons/chat_floating_button.svg" alt="Chat" />
+  <img class="icon-close" src="${baseUrl}/icons/chat_close_button.svg" alt="Close" />
 </button>
 
 <div id="dgist-chatbot-container">

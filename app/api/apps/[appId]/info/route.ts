@@ -25,12 +25,15 @@ export async function GET(
       )
     }
 
-    // 비공개 챗봇은 조회 불가
+    // 비공개 챗봇: 인증된 사용자만 접근 허용
     if (!app.isPublic) {
-      return NextResponse.json(
-        { error: 'This chatbot is not public' },
-        { status: 403 },
-      )
+      const userId = request.headers.get('x-user-id')
+      if (!userId) {
+        return NextResponse.json(
+          { error: 'This chatbot is not public' },
+          { status: 403 },
+        )
+      }
     }
 
     return NextResponse.json(app)

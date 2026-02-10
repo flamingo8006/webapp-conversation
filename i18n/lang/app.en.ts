@@ -93,6 +93,8 @@ const translation = {
   embed: {
     tokenRequired: 'Authentication token is required.',
     contactAdmin: 'Please contact administrator.',
+    authFailed: 'Authentication failed.',
+    verifying: 'Verifying authentication...',
   },
   chatType: {
     title: 'Select Chat Type',

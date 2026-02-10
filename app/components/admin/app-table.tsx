@@ -184,7 +184,7 @@ export function AppTable({ apps, onDelete }: AppTableProps) {
                       size="sm"
                       asChild
                     >
-                      <Link href={`/admin/apps/${app.id}/edit`}>
+                      <Link href={adminPath(`/apps/${app.id}/edit`)}>
                         수정
                       </Link>
                     </Button>

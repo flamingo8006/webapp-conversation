@@ -48,11 +48,13 @@ export function ChatPopup({ isOpen, onClose, children, appName }: ChatPopupProps
         localStorage.setItem(STORAGE_KEY, JSON.stringify(size))
         // 부모 창(임베드 HTML)에 리사이즈 메시지 전송
         if (window.parent !== window) {
+          const origins = process.env.NEXT_PUBLIC_ALLOWED_EMBED_ORIGINS
+          const targetOrigin = origins ? origins.split(',')[0].trim() : '*'
           window.parent.postMessage({
             type: 'CHATBOT_RESIZE',
             width: size.width,
             height: size.height,
-          }, '*')
+          }, targetOrigin)
         }
       }
       catch (e) {
@@ -145,19 +147,11 @@ export function ChatPopup({ isOpen, onClose, children, appName }: ChatPopupProps
             className="p-1 hover:bg-blue-700 rounded transition-colors"
             aria-label="Close chat"
           >
-            <svg
+            <img
+              src="/icons/chat_close_button.svg"
+              alt="Close"
               className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            />
           </button>
         </div>
 

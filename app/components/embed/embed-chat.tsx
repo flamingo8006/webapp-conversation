@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { FloatingButton } from './floating-button'
 import { ChatPopup } from './chat-popup'
-import Main from '@/app/components'
+import SimpleChatMain from '@/app/components/simple-chat-main'
 import type { AppConfig } from '@/hooks/use-app'
 
 interface EmbedChatProps {
@@ -15,13 +15,18 @@ export function EmbedChat({ appId, app }: EmbedChatProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
+  // 허용된 origin 목록 (환경변수로 관리)
+  const allowedOrigins = process.env.NEXT_PUBLIC_ALLOWED_EMBED_ORIGINS
+    ? process.env.NEXT_PUBLIC_ALLOWED_EMBED_ORIGINS.split(',').map(o => o.trim())
+    : []
+
   // 부모 창과 postMessage 통신
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // 보안: origin 검증 (프로덕션에서는 특정 도메인만 허용)
-      // if (event.origin !== 'https://trusted-domain.com') return
+      // 보안: origin 검증 (설정된 경우만 체크, 미설정 시 모든 origin 허용)
+      if (allowedOrigins.length > 0 && !allowedOrigins.includes(event.origin)) { return }
 
-      const { type, data } = event.data
+      const { type } = event.data || {}
 
       switch (type) {
         case 'OPEN_CHAT':
@@ -46,6 +51,7 @@ export function EmbedChat({ appId, app }: EmbedChatProps) {
   }, [])
 
   // 채팅 상태를 부모 창에 전달
+  const postMessageOrigin = allowedOrigins.length > 0 ? allowedOrigins[0] : '*'
   useEffect(() => {
     if (window.parent !== window) {
       window.parent.postMessage(
@@ -53,10 +59,10 @@ export function EmbedChat({ appId, app }: EmbedChatProps) {
           type: 'CHAT_STATUS',
           data: { isOpen, unreadCount },
         },
-        '*', // 프로덕션에서는 특정 origin 지정
+        postMessageOrigin,
       )
     }
-  }, [isOpen, unreadCount])
+  }, [isOpen, unreadCount, postMessageOrigin])
 
   const handleToggle = () => {
     setIsOpen(prev => !prev)
@@ -79,7 +85,7 @@ export function EmbedChat({ appId, app }: EmbedChatProps) {
         onClose={() => setIsOpen(false)}
         appName={app.name}
       >
-        <Main params={{}} appId={appId} />
+        <SimpleChatMain appId={appId} />
       </ChatPopup>
     </>
   )

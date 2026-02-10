@@ -89,6 +89,8 @@ const translation = {
   embed: {
     tokenRequired: '인증 토큰이 필요합니다.',
     contactAdmin: '관리자에게 문의하세요.',
+    authFailed: '인증에 실패했습니다.',
+    verifying: '인증 확인 중...',
   },
   chatType: {
     title: '채팅 화면 선택',
