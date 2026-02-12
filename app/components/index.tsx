@@ -9,7 +9,7 @@ import Toast from '@/app/components/base/toast'
 import Sidebar from '@/app/components/sidebar'
 import Header from '@/app/components/header'
 import WelcomeScreen from '@/app/components/welcome-screen'
-import { fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
+import { fetchAppParams, fetchChatList, fetchConversations, sendChatMessage, updateFeedback } from '@/service'
 import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
@@ -18,13 +18,14 @@ import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
 import Loading from '@/app/components/base/loading'
 import { replaceVarWithValues } from '@/utils/prompt'
 import AppUnavailable from '@/app/components/app-unavailable'
-import { API_KEY, APP_ID, APP_INFO, isShowPrompt, promptTemplate } from '@/config'
+import { APP_INFO, isShowPrompt, promptTemplate } from '@/config'
 import { useApp } from '@/hooks/use-app'
 import { useAuth } from '@/app/components/providers/auth-provider'
 import type { Annotation as AnnotationType } from '@/types/log'
 import { addFileInfos, sortAgentSorts } from '@/utils/tools'
 import { userInputsFormToPromptVariables } from '@/utils/prompt'
 import { getOrCreateSessionId } from '@/lib/session-manager'
+import { toDifyFileProxyUrl } from '@/lib/dify-file-url'
 
 export interface IMainProps {
   params: any
@@ -35,9 +36,8 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
   const { t, i18n } = useTranslation()
   const media = useBreakpoints()
   const isMobile = media === MediaType.mobile
-  // Multi-App: props로 전달된 appId 우선, 없으면 환경변수 사용
-  const appId = propAppId || APP_ID
-  const hasSetAppConfig = appId && API_KEY
+  const appId = propAppId ?? ''
+  const hasSetAppConfig = !!appId
 
   // 사용자 정보 및 앱 다국어 정보
   const { user } = useAuth()
@@ -505,18 +505,10 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
         if (getConversationIdChangeBecauseOfNew()) {
           try {
             const { data: allConversations }: any = await fetchConversations(appId)
-            const newItem: any = await generationConversationName(allConversations[0].id)
-
-            const newAllConversations = produce(allConversations, (draft: any) => {
-              draft[0].name = newItem.name
-            })
-            setConversationList(newAllConversations as any)
+            setConversationList(allConversations as any)
           }
           catch (e) {
-            // 대화명 자동 생성 실패 시 무시 (기본 이름 사용)
-            console.warn('Failed to generate conversation name:', e)
-            const { data: allConversations }: any = await fetchConversations(appId)
-            setConversationList(allConversations as any)
+            console.warn('Failed to fetch conversations:', e)
           }
         }
         resetNewConversationInputs()
@@ -528,6 +520,9 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
         setRespondingFalse()
       },
       onFile(file) {
+        if (file.url)
+        { file.url = toDifyFileProxyUrl(file.url, appId) }
+
         const lastThought = responseItem.agent_thoughts?.[responseItem.agent_thoughts?.length - 1]
         if (lastThought) { lastThought.message_files = [...(lastThought as any).message_files, { ...file }] }
 

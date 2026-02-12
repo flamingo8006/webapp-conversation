@@ -4,6 +4,7 @@ import { ChatClient } from 'dify-client'
 import { getChatbotAppWithKey } from '@/lib/repositories/chatbot-app'
 import { getUserFromRequest } from '@/lib/auth-utils'
 import type { DifyMessage, DifyMessageFile, DifyMessagesResponse } from '@/types/dify'
+import { toDifyFileProxyUrl } from '@/lib/dify-file-url'
 import { errorCapture } from '@/lib/error-capture'
 import { logger } from '@/lib/logger'
 
@@ -64,14 +65,13 @@ export async function GET(
     // 메시지 조회
     const { data } = await client.getConversationMessages(difyUser, conversationId) as { data: DifyMessagesResponse }
 
-    // 파일 URL 변환: 상대 경로를 전체 URL로 변환
-    const difyBaseUrl = app.apiUrl?.replace('/v1', '') || ''
-    if (difyBaseUrl && data.data) {
+    // 파일 URL 변환: Dify 내부 URL을 프록시 URL로 변환
+    if (data.data) {
       data.data = data.data.map((message: DifyMessage) => {
         if (message.message_files) {
           message.message_files = message.message_files.map((file: DifyMessageFile) => {
-            if (file.url && file.url.startsWith('/files/')) {
-              file.url = `${difyBaseUrl}${file.url}`
+            if (file.url) {
+              file.url = toDifyFileProxyUrl(file.url, appId)
             }
             return file
           })

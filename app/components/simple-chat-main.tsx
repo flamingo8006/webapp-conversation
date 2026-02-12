@@ -17,9 +17,10 @@ import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
 import Loading from '@/app/components/base/loading'
 import { replaceVarWithValues, userInputsFormToPromptVariables } from '@/utils/prompt'
 import AppUnavailable from '@/app/components/app-unavailable'
-import { API_KEY, APP_ID, APP_INFO, promptTemplate } from '@/config'
+import { APP_INFO, promptTemplate } from '@/config'
 import type { Annotation as AnnotationType } from '@/types/log'
 import { addFileInfos, sortAgentSorts } from '@/utils/tools'
+import { toDifyFileProxyUrl } from '@/lib/dify-file-url'
 import { useSession } from '@/hooks/use-session'
 import { useApp } from '@/hooks/use-app'
 import LanguageSwitcher from '@/app/components/language-switcher'
@@ -34,8 +35,8 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
   const { t, i18n } = useTranslation()
   const media = useBreakpoints()
   const isMobile = media === MediaType.mobile
-  const appId = propAppId || APP_ID
-  const hasSetAppConfig = appId && (propAppId || API_KEY)
+  const appId = propAppId ?? ''
+  const hasSetAppConfig = !!appId
 
   // Phase 7: 익명 사용자 세션 관리
   const { sessionId, isReady: isSessionReady } = useSession()
@@ -481,6 +482,9 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
         setRespondingFalse()
       },
       onFile(file) {
+        if (file.url)
+        { file.url = toDifyFileProxyUrl(file.url, appId) }
+
         const lastThought = responseItem.agent_thoughts?.[responseItem.agent_thoughts?.length - 1]
         if (lastThought) { lastThought.message_files = [...(lastThought as any).message_files, { ...file }] }
 
