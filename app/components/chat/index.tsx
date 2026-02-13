@@ -38,6 +38,7 @@ export interface IChatProps {
   controlClearQuery?: number
   visionConfig?: VisionSettings
   fileConfig?: FileUpload
+  showWorkflowSteps?: boolean
 }
 
 const Chat: FC<IChatProps> = ({
@@ -52,6 +53,7 @@ const Chat: FC<IChatProps> = ({
   controlClearQuery,
   visionConfig,
   fileConfig,
+  showWorkflowSteps = false,
 }) => {
   const { t } = useTranslation()
   const { notify } = Toast
@@ -177,6 +179,7 @@ const Chat: FC<IChatProps> = ({
                 onFeedback={onFeedback}
                 isResponding={isResponding && isLast}
                 suggestionClick={suggestionClick}
+                showWorkflowSteps={showWorkflowSteps}
               />
             }
             return (

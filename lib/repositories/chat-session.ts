@@ -191,7 +191,7 @@ export async function saveMessage(data: {
       parentMessageId: data.parentMessageId,
       role: data.role,
       content: data.content,
-      files: data.files,
+      files: data.files as any,
       tokenCount: data.tokenCount,
     },
   })

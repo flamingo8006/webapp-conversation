@@ -48,6 +48,8 @@ export function AppForm({ app, mode, groups = [] }: AppFormProps) {
     requireAuth: app?.requireAuth ?? true,
     allowAnonymous: app?.allowAnonymous ?? false,
     maxAnonymousMsgs: app?.maxAnonymousMsgs || 0,
+    // Workflow 표시 설정
+    showWorkflowSteps: app?.showWorkflowSteps ?? true,
     // Phase 14: 그룹
     groupId: app?.groupId || '',
   })
@@ -329,6 +331,20 @@ export function AppForm({ app, mode, groups = [] }: AppFormProps) {
                   활성화
                 </Label>
               </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="showWorkflowSteps"
+                  checked={formData.showWorkflowSteps}
+                  onCheckedChange={checked => handleCheckboxChange('showWorkflowSteps', checked as boolean)}
+                />
+                <Label htmlFor="showWorkflowSteps" className="cursor-pointer">
+                  Workflow 단계 표시
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground ml-6">
+                체크하면 AI 답변 시 Workflow 처리 과정이 채팅 화면에 표시됩니다. Dify 앱 설정과 동일하게 맞춰주세요.
+              </p>
             </div>
           </div>
 

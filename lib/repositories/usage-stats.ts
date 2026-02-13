@@ -34,12 +34,12 @@ export const usageStatsRepository = {
       where: {
         date_appId: {
           date: dateOnly,
-          appId: input.appId || null,
+          appId: (input.appId || null) as any,
         },
       },
       create: {
         date: dateOnly,
-        appId: input.appId || null,
+        appId: (input.appId || null) as any,
         totalSessions: (input.newSessions || 0),
         newSessions: input.newSessions || 0,
         authSessions: input.authSessions || 0,
@@ -395,11 +395,11 @@ export const usageStatsRepository = {
 
     await prisma.dailyUsageStats.upsert({
       where: {
-        date_appId: { date: startOfDay, appId: null },
+        date_appId: { date: startOfDay, appId: null as any },
       },
       create: {
         date: startOfDay,
-        appId: null,
+        appId: null as any,
         totalSessions: authSessions + anonymousSessions,
         newSessions: authSessions + anonymousSessions,
         authSessions,

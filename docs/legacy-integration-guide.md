@@ -1,8 +1,8 @@
 # DGIST AI 포털 - 레거시 시스템 연동 가이드
 
 > **대상 독자**: Java/Spring 기반 레거시 시스템 개발자
-> **최종 수정**: 2026-02-10
-> **버전**: 1.0
+> **최종 수정**: 2026-02-12
+> **버전**: 1.1
 
 ---
 
@@ -12,10 +12,10 @@
 2. [시나리오 1: AI 포털 접속 (Legacy Portal -> Chatbot)](#2-시나리오-1-ai-포털-접속)
    - [2.1 흐름도](#21-흐름도)
    - [2.2 API 명세: POST /api/auth/embed-token](#22-api-명세-post-apiauthembed-token)
-   - [2.3 API 명세: POST /api/auth/token](#23-api-명세-post-apiauthtoken)
-   - [2.4 Java 구현 예제 (HttpURLConnection)](#24-java-구현-예제-httpurlconnection)
-   - [2.5 Java 구현 예제 (Spring RestTemplate)](#25-java-구현-예제-spring-resttemplate)
-   - [2.6 JSP 자동 제출 폼 예제](#26-jsp-자동-제출-폼-예제)
+   - [2.3 API 명세: /api/auth/token](#23-api-명세-apiauthtoken)
+   - [2.4 Java 구현 예제 (서비스)](#24-java-구현-예제-서비스)
+   - [2.5 Java 구현 예제 (컨트롤러)](#25-java-구현-예제-컨트롤러)
+   - [2.6 JavaScript 호출 예제](#26-javascript-호출-예제)
 3. [시나리오 2: 익명 임베드](#3-시나리오-2-익명-임베드)
 4. [시나리오 3: 인증형 임베드 (HMAC 서명)](#4-시나리오-3-인증형-임베드)
    - [4.1 흐름도](#41-흐름도)
@@ -36,7 +36,7 @@ DGIST AI 포털(챗봇 시스템)은 기존 레거시 포털 시스템과 3가�
 
 | 시나리오 | 용도 | 인증 방식 | 레거시 측 작업 |
 |---------|------|----------|--------------|
-| **시나리오 1** | 포털에서 AI 챗봇 페이지로 이동 | API Key + JWT | 서버 측 토큰 발급 + JSP 폼 전송 |
+| **시나리오 1** | 포털에서 AI 챗봇 페이지로 이동 | API Key + JWT | 서버 측 토큰 발급 + 302 리다이렉트 |
 | **시나리오 2** | 공개 챗봇을 iframe으로 삽입 | 없음 (익명) | iframe 태그 추가만 필요 |
 | **시나리오 3** | 인증된 사용자용 챗봇을 iframe으로 삽입 | HMAC-SHA256 서명 | HMAC 서명 생성 + 사용자 확인 API 제공 |
 
@@ -62,11 +62,12 @@ DGIST AI 포털(챗봇 시스템)은 기존 레거시 포털 시스템과 3가�
      |                       |   (X-API-Key + 사용자 정보)     |
      |                       |<-- { token: "eyJ..." } ---------|
      |                       |                        |
-     |<-- HTML (auto-submit form) --|                 |
+     |<-- 302 Redirect ------|                        |
+     |    Location: /api/auth/token?token=eyJ...      |
      |                       |                        |
-     |-- POST /api/auth/token (form data) ----------->|
-     |   (token=eyJ...)                               |
+     |-- GET /api/auth/token?token=eyJ... ----------->|
      |<-- 302 Redirect + Set-Cookie(auth_token) ------|
+     |    Location: /                                 |
      |                       |                        |
      |-- GET / (with cookie) ----------------------->|
      |<-- AI 포털 메인 페이지 ------------------------|
@@ -126,11 +127,26 @@ X-API-Key: {EMBED_API_KEY}
 | 400 | `{ "error": "loginId, empNo, name are required" }` | 필수 필드 누락 |
 | 500 | `{ "error": "Internal server error" }` | 서버 내부 오류 |
 
-### 2.3 API 명세: POST /api/auth/token
+### 2.3 API 명세: /api/auth/token
 
 브라우저가 JWT 토큰을 제출하면, 챗봇 시스템이 쿠키를 설정하고 메인 페이지로 리다이렉트합니다.
 
-**요청** (HTML Form POST):
+**3가지 전달 방식 지원** (레거시 시스템 구현 편의에 따라 선택):
+
+#### 방법 A: GET 리다이렉트 (가장 간단, 권장)
+
+레거시 서버에서 사용자의 브라우저를 302 리다이렉트합니다.
+
+```
+GET /api/auth/token?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+Host: {CHATBOT_HOST}
+```
+
+레거시 서버 구현이 가장 간단합니다. 컨트롤러에서 `redirect:` 한 줄이면 됩니다.
+
+#### 방법 B: Form POST (auto-submit form)
+
+HTML 페이지에서 자동 제출 폼으로 토큰을 전달합니다.
 
 ```
 POST /api/auth/token
@@ -140,7 +156,18 @@ Content-Type: application/x-www-form-urlencoded
 token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-**성공**: HTTP 302 리다이렉트
+보안상 URL에 토큰을 노출하지 않으므로 더 안전합니다.
+
+#### 방법 C: 포털 URL 파라미터
+
+포털 메인 페이지에 토큰을 쿼리 파라미터로 전달합니다. 포털 페이지의 JavaScript가 자동으로 처리합니다.
+
+```
+GET /?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+Host: {CHATBOT_HOST}
+```
+
+**공통 성공 응답**: HTTP 302 리다이렉트
 
 ```
 HTTP/1.1 302 Found
@@ -148,7 +175,7 @@ Location: /
 Set-Cookie: auth_token=eyJ...; HttpOnly; Secure; SameSite=Lax; Max-Age=28800; Path=/
 ```
 
-**실패**: HTTP 302 리다이렉트 (에러 페이지로)
+**공통 실패 응답**: HTTP 302 리다이렉트 (에러 페이지로)
 
 ```
 HTTP/1.1 302 Found
@@ -157,37 +184,60 @@ Location: /login?error=invalid_token
 
 | 에러 파라미터 | 원인 |
 |-------------|------|
-| `missing_token` | 폼에 token 필드 없음 |
+| `missing_token` | 토큰 파라미터 없음 |
 | `invalid_token` | JWT 검증 실패 (만료, 서명 불일치 등) |
 | `server_error` | 서버 내부 오류 |
 
-### 2.4 Java 구현 예제 (HttpURLConnection)
+### 2.4 Java 구현 예제 (서비스)
+
+챗봇 시스템에 토큰을 요청하는 서비스 클래스입니다.
+
+**properties 설정**:
+
+```properties
+chatbot.protocol=http
+chatbot.host=10.110.2.18
+chatbot.port=3000
+chatbot.embedApiKey=your-embed-api-key-here
+chatbot.getTokenUrl=/api/auth/embed-token
+chatbot.indexUrl=/api/auth/token
+```
+
+**서비스 구현** (HttpURLConnection):
 
 ```java
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-
-public class ChatbotTokenService {
-
-    private static final String CHATBOT_HOST = "https://ai-chatbot.dgist.ac.kr";
-    private static final String EMBED_API_KEY = "your-embed-api-key-here";
+@Service
+public class ChatbotServiceImpl implements ChatbotService {
 
     /**
-     * 챗봇 시스템에 JWT 토큰을 요청합니다.
-     *
-     * @param loginId 사용자 로그인 ID
-     * @param empNo   사원번호
-     * @param name    사용자 이름
-     * @return JWT 토큰 문자열, 실패 시 null
+     * 챗봇 시스템에 JWT 토큰을 요청하고, 리다이렉트 URL을 반환합니다.
      */
-    public String requestChatbotToken(String loginId, String empNo, String name) {
+    @Override
+    public Map<String, Object> getChatbotToken(HttpServletRequest request) throws Exception {
+        // 세션에서 사용자 정보 조회
+        String loginId = (String) request.getSession().getAttribute("LOGIN_ID");
+        String empNo = (String) request.getSession().getAttribute("STTS_NO");
+        String name = (String) request.getSession().getAttribute("KOR_REL_PSN_NM");
+
+        // JSON 요청 본문 생성
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("loginId", loginId);
+        paramMap.put("empNo", empNo);
+        paramMap.put("name", name);
+        paramMap.put("role", "user");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonBody = objectMapper.writeValueAsString(paramMap);
+
+        // 설정값 로드
+        String chatbotBaseUrl = chatbotProtocol + "://" + chatbotHost + ":" + chatbotPort;
+        String EMBED_API_KEY = chatbotEmbedApiKey;
+
+        Map<String, Object> resultMap = new HashMap<>();
         HttpURLConnection conn = null;
+
         try {
-            URL url = new URL(CHATBOT_HOST + "/api/auth/embed-token");
+            URL url = new URL(chatbotBaseUrl + chatbotGetTokenUrl);
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
@@ -196,211 +246,111 @@ public class ChatbotTokenService {
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(10000);
 
-            // 요청 본문 작성
-            String jsonBody = String.format(
-                "{\"loginId\":\"%s\",\"empNo\":\"%s\",\"name\":\"%s\",\"role\":\"user\"}",
-                escapeJson(loginId),
-                escapeJson(empNo),
-                escapeJson(name)
-            );
-
             try (OutputStream os = conn.getOutputStream()) {
                 os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
                 os.flush();
             }
 
             int responseCode = conn.getResponseCode();
-            if (responseCode != 200) {
-                // 에러 응답 읽기
+
+            if (responseCode == 200) {
+                // 성공 응답 파싱
                 try (BufferedReader br = new BufferedReader(
-                        new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                        new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
                     StringBuilder sb = new StringBuilder();
                     String line;
                     while ((line = br.readLine()) != null) {
                         sb.append(line);
                     }
-                    System.err.println("토큰 발급 실패 (HTTP " + responseCode + "): " + sb);
+
+                    JsonObject obj = JsonParser.parseString(sb.toString()).getAsJsonObject();
+                    String tokenInfo = obj.get("token").getAsString();
+
+                    resultMap.put("result", true);
+                    resultMap.put("tokenInfo", tokenInfo);
+                    // 리다이렉트 URL에 토큰 포함
+                    resultMap.put("chatbotRedirect",
+                        chatbotBaseUrl + chatbotIndexUrl + "?token=" + tokenInfo);
                 }
-                return null;
+            } else {
+                // 에러 처리
+                resultMap.put("result", false);
+                resultMap.put("message", "토큰 발급 실패 (HTTP " + responseCode + ")");
             }
-
-            // 성공 응답 파싱
-            try (BufferedReader br = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                }
-                String responseBody = sb.toString();
-
-                // 간단한 JSON 파싱 (프로덕션에서는 Jackson/Gson 사용 권장)
-                int tokenStart = responseBody.indexOf("\"token\":\"") + 9;
-                int tokenEnd = responseBody.indexOf("\"", tokenStart);
-                return responseBody.substring(tokenStart, tokenEnd);
-            }
-
         } catch (Exception e) {
-            System.err.println("챗봇 토큰 요청 중 오류 발생: " + e.getMessage());
-            e.printStackTrace();
-            return null;
+            resultMap.put("result", false);
+            resultMap.put("message", "챗봇 토큰 요청 중 오류: " + e.getMessage());
         } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
+            if (conn != null) conn.disconnect();
         }
-    }
 
-    private String escapeJson(String value) {
-        if (value == null) return "";
-        return value.replace("\\", "\\\\")
-                     .replace("\"", "\\\"")
-                     .replace("\n", "\\n")
-                     .replace("\r", "\\r");
+        return resultMap;
     }
 }
 ```
 
-### 2.5 Java 구현 예제 (Spring RestTemplate)
+### 2.5 Java 구현 예제 (컨트롤러)
+
+**방법 A: GET 리다이렉트 (권장)**
+
+컨트롤러에서 토큰 발급 후 바로 챗봇으로 리다이렉트합니다. JSP 페이지가 필요 없습니다.
 
 ```java
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
-
-import java.util.HashMap;
-import java.util.Map;
-
-@Service
-public class ChatbotTokenService {
-
-    private final RestTemplate restTemplate;
-
-    // application.properties 또는 application.yml에서 주입
-    @Value("${chatbot.host}")
-    private String chatbotHost;
-
-    @Value("${chatbot.embed-api-key}")
-    private String embedApiKey;
-
-    public ChatbotTokenService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
-
-    /**
-     * 챗봇 시스템에 JWT 토큰을 요청합니다.
-     *
-     * @param loginId 사용자 로그인 ID
-     * @param empNo   사원번호
-     * @param name    사용자 이름
-     * @return JWT 토큰 문자열
-     * @throws ChatbotTokenException 토큰 발급 실패 시
-     */
-    public String requestChatbotToken(String loginId, String empNo, String name) {
-        String url = chatbotHost + "/api/auth/embed-token";
-
-        // 헤더 설정
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("X-API-Key", embedApiKey);
-
-        // 요청 본문
-        Map<String, String> body = new HashMap<>();
-        body.put("loginId", loginId);
-        body.put("empNo", empNo);
-        body.put("name", name);
-        body.put("role", "user");
-
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
-
-        try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-            Map<String, Object> responseBody = response.getBody();
-
-            if (responseBody != null && Boolean.TRUE.equals(responseBody.get("success"))) {
-                return (String) responseBody.get("token");
-            }
-
-            throw new ChatbotTokenException("토큰 발급 응답이 올바르지 않습니다.");
-
-        } catch (HttpClientErrorException e) {
-            throw new ChatbotTokenException(
-                "토큰 발급 실패 (HTTP " + e.getStatusCode() + "): " + e.getResponseBodyAsString()
-            );
-        }
-    }
-}
-
-// 예외 클래스
-public class ChatbotTokenException extends RuntimeException {
-    public ChatbotTokenException(String message) {
-        super(message);
-    }
-}
-```
-
-**application.yml 설정**:
-
-```yaml
-chatbot:
-  host: https://ai-chatbot.dgist.ac.kr
-  embed-api-key: ${EMBED_API_KEY}
-```
-
-**Spring Controller 예제**:
-
-```java
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-
-import javax.servlet.http.HttpSession;
-
 @Controller
 public class ChatbotController {
 
-    private final ChatbotTokenService tokenService;
+    @Autowired
+    private ChatbotService chatbotService;
 
-    @Value("${chatbot.host}")
-    private String chatbotHost;
+    @RequestMapping(value = "/com/chatbot/index.do")
+    public String index(HttpServletRequest request, ModelMap model) throws Exception {
+        Map<String, Object> tokenMap = chatbotService.getChatbotToken(request);
 
-    public ChatbotController(ChatbotTokenService tokenService) {
-        this.tokenService = tokenService;
-    }
-
-    /**
-     * "AI 챗봇" 메뉴 클릭 시 호출됩니다.
-     * 토큰을 발급받아 자동 제출 폼이 있는 JSP 페이지를 렌더링합니다.
-     */
-    @GetMapping("/portal/ai-chatbot")
-    public String redirectToChatbot(HttpSession session, Model model) {
-        // 현재 로그인된 사용자 정보 (레거시 세션에서 가져옴)
-        String loginId = (String) session.getAttribute("loginId");
-        String empNo = (String) session.getAttribute("empNo");
-        String name = (String) session.getAttribute("name");
-
-        if (loginId == null || empNo == null || name == null) {
-            return "redirect:/login";
+        // 토큰 발급 성공 → 챗봇으로 바로 리다이렉트
+        if (Boolean.TRUE.equals(tokenMap.get("result"))) {
+            return "redirect:" + tokenMap.get("chatbotRedirect");
         }
 
-        try {
-            String token = tokenService.requestChatbotToken(loginId, empNo, name);
-            model.addAttribute("chatbotHost", chatbotHost);
-            model.addAttribute("token", token);
-            return "chatbot-redirect";  // chatbot-redirect.jsp 렌더링
-        } catch (ChatbotTokenException e) {
-            model.addAttribute("errorMessage", "AI 챗봇 접속에 실패했습니다: " + e.getMessage());
-            return "error";
-        }
+        // 실패 시 에러 페이지 표시
+        model.addAttribute("tokenMap", tokenMap);
+        return "com/compChatbotError";
     }
 }
 ```
 
-### 2.6 JSP 자동 제출 폼 예제
+Spring MVC의 `redirect:` 접두사는 외부 URL도 지원합니다. 최종 리다이렉트 URL:
+
+```
+http://{CHATBOT_HOST}/api/auth/token?token=eyJhbG...
+```
+
+### 2.6 JavaScript 호출 예제
+
+레거시 포털에서 챗봇을 새 창으로 여는 JavaScript 코드입니다.
+
+**새 탭으로 열기**:
+
+```javascript
+$("#btnChatBot").click(function() {
+    window.open('<c:url value="/com/chatbot/index.do" />', '_blank');
+});
+```
+
+**팝업 창으로 열기**:
+
+```javascript
+$("#btnChatBot").click(function() {
+    window.open(
+        '<c:url value="/com/chatbot/index.do" />',
+        'chatbotWindow',
+        'width=1200,height=800,scrollbars=yes,resizable=yes'
+    );
+});
+```
+
+### 2.7 대안: Form POST 방식 (JSP 사용)
+
+URL에 토큰을 노출하지 않으려면, JSP에서 auto-submit form을 사용할 수 있습니다.
 
 **chatbot-redirect.jsp**:
 
@@ -411,41 +361,10 @@ public class ChatbotController {
 <head>
     <meta charset="UTF-8">
     <title>AI 챗봇으로 이동 중...</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: 'Malgun Gothic', sans-serif;
-            background-color: #f5f5f5;
-        }
-        .loading {
-            text-align: center;
-            color: #666;
-        }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e0e0e0;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
 </head>
 <body>
-    <div class="loading">
-        <div class="spinner"></div>
-        <p>AI 챗봇으로 이동 중입니다...</p>
-    </div>
+    <p>AI 챗봇으로 이동 중입니다...</p>
 
-    <!-- 자동 제출 폼 -->
     <form id="chatbotForm"
           method="POST"
           action="${chatbotHost}/api/auth/token"
@@ -454,51 +373,21 @@ public class ChatbotController {
     </form>
 
     <script>
-        // 페이지 로드 완료 시 자동 제출
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('chatbotForm').submit();
         });
     </script>
-
-    <!-- JavaScript 비활성화 시 수동 제출 지원 -->
-    <noscript>
-        <form method="POST" action="${chatbotHost}/api/auth/token">
-            <input type="hidden" name="token" value="${token}" />
-            <button type="submit">AI 챗봇으로 이동</button>
-        </form>
-    </noscript>
 </body>
 </html>
 ```
 
-**Thymeleaf 버전** (`chatbot-redirect.html`):
+이 방식을 사용하려면 컨트롤러에서 `redirect:` 대신 JSP 뷰를 반환합니다:
 
-```html
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>AI 챗봇으로 이동 중...</title>
-</head>
-<body>
-    <div class="loading">
-        <p>AI 챗봇으로 이동 중입니다...</p>
-    </div>
-
-    <form id="chatbotForm"
-          method="POST"
-          th:action="${chatbotHost + '/api/auth/token'}"
-          style="display: none;">
-        <input type="hidden" name="token" th:value="${token}" />
-    </form>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('chatbotForm').submit();
-        });
-    </script>
-</body>
-</html>
+```java
+// Form POST 방식 (JSP 사용)
+model.addAttribute("chatbotHost", chatbotBaseUrl);
+model.addAttribute("token", tokenMap.get("tokenInfo"));
+return "chatbot-redirect";
 ```
 
 ---
@@ -607,26 +496,15 @@ import java.nio.charset.StandardCharsets;
  */
 public class HmacUtil {
 
-    /**
-     * HMAC-SHA256 서명을 생성합니다.
-     *
-     * @param loginId 사용자 로그인 ID
-     * @param empNo   사원번호
-     * @param name    사용자 이름 (URL 인코딩 전 원본 값)
-     * @param secret  공유 비밀키 (EMBED_HMAC_SECRET)
-     * @return HMAC 서명 결과 (서명값 + 타임스탬프)
-     */
     public static HmacResult sign(String loginId, String empNo, String name, String secret) {
         try {
             long ts = System.currentTimeMillis();
 
-            // 정규화 문자열 생성 (name은 URL 인코딩 전 원본값 사용)
             String canonical = "loginId=" + loginId
                              + "&empNo=" + empNo
                              + "&name=" + name
                              + "&ts=" + ts;
 
-            // HMAC-SHA256 서명
             Mac mac = Mac.getInstance("HmacSHA256");
             SecretKeySpec keySpec = new SecretKeySpec(
                 secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"
@@ -634,7 +512,6 @@ public class HmacUtil {
             mac.init(keySpec);
             byte[] hash = mac.doFinal(canonical.getBytes(StandardCharsets.UTF_8));
 
-            // hex 문자열로 변환
             StringBuilder sb = new StringBuilder();
             for (byte b : hash) {
                 sb.append(String.format("%02x", b));
@@ -647,17 +524,6 @@ public class HmacUtil {
         }
     }
 
-    /**
-     * 챗봇 임베드 iframe URL을 생성합니다.
-     *
-     * @param chatbotHost 챗봇 호스트 (예: https://ai-chatbot.dgist.ac.kr)
-     * @param appId       챗봇 앱 ID
-     * @param loginId     사용자 로그인 ID
-     * @param empNo       사원번호
-     * @param name        사용자 이름
-     * @param secret      공유 비밀키
-     * @return 서명된 iframe URL
-     */
     public static String buildEmbedUrl(
             String chatbotHost, String appId,
             String loginId, String empNo, String name,
@@ -677,9 +543,6 @@ public class HmacUtil {
         }
     }
 
-    /**
-     * HMAC 서명 결과를 담는 클래스
-     */
     public static class HmacResult {
         private final String signature;
         private final long timestamp;
@@ -698,14 +561,6 @@ public class HmacUtil {
 #### Spring Controller 예제
 
 ```java
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-
-import javax.servlet.http.HttpSession;
-
 @Controller
 public class ChatbotEmbedController {
 
@@ -715,9 +570,6 @@ public class ChatbotEmbedController {
     @Value("${chatbot.hmac-secret}")
     private String hmacSecret;
 
-    /**
-     * 인증형 임베드 챗봇 페이지를 렌더링합니다.
-     */
     @GetMapping("/support/chatbot/{appId}")
     public String showEmbeddedChatbot(
             @PathVariable String appId,
@@ -732,13 +584,11 @@ public class ChatbotEmbedController {
             return "redirect:/login";
         }
 
-        // 서명된 임베드 URL 생성
         String embedUrl = HmacUtil.buildEmbedUrl(
             chatbotHost, appId, loginId, empNo, name, hmacSecret
         );
 
         model.addAttribute("embedUrl", embedUrl);
-        model.addAttribute("appId", appId);
         return "chatbot-embed";
     }
 }
@@ -753,8 +603,6 @@ chatbot:
 ```
 
 #### JSP iframe 렌더링 예제
-
-**chatbot-embed.jsp**:
 
 ```jsp
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
@@ -781,39 +629,11 @@ chatbot:
 </html>
 ```
 
-**Thymeleaf 버전** (`chatbot-embed.html`):
-
-```html
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>AI 상담</title>
-</head>
-<body>
-    <div class="chatbot-wrapper" style="max-width: 800px; margin: 0 auto;">
-        <h2>AI 상담</h2>
-        <iframe
-            id="chatbotFrame"
-            th:src="${embedUrl}"
-            width="100%"
-            height="600"
-            frameborder="0"
-            allow="microphone"
-            style="border: 1px solid #e0e0e0; border-radius: 8px;">
-        </iframe>
-    </div>
-</body>
-</html>
-```
-
 ### 4.3 Part B: 레거시 시스템 측 - 사용자 확인 API
 
 챗봇 시스템이 HMAC 서명을 검증한 뒤, 레거시 시스템에 사용자의 실제 존재 여부를 확인합니다. **레거시 시스템에서 이 API를 구현해야 합니다.**
 
 #### API 명세: POST /api/verify-user
-
-챗봇 시스템이 호출하는 API입니다. 레거시 시스템에서 구현해야 합니다.
 
 **요청** (챗봇 시스템 -> 레거시 시스템):
 
@@ -860,15 +680,6 @@ Content-Type: application/json
 #### Spring Boot Controller 구현 예제
 
 ```java
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
-import java.util.HashMap;
-
 @RestController
 public class UserVerifyController {
 
@@ -878,10 +689,6 @@ public class UserVerifyController {
         this.userRepository = userRepository;
     }
 
-    /**
-     * 챗봇 시스템에서 호출하는 사용자 확인 API.
-     * loginId + empNo로 사용자를 조회하여 정보를 반환합니다.
-     */
     @PostMapping("/api/verify-user")
     public ResponseEntity<?> verifyUser(@RequestBody VerifyUserRequest request) {
         if (request.getLoginId() == null || request.getEmpNo() == null) {
@@ -889,7 +696,6 @@ public class UserVerifyController {
                 .body(Map.of("error", "loginId and empNo are required"));
         }
 
-        // DB에서 사용자 조회
         User user = userRepository.findByLoginIdAndEmpNo(
             request.getLoginId(),
             request.getEmpNo()
@@ -900,7 +706,6 @@ public class UserVerifyController {
                 .body(Map.of("error", "User not found"));
         }
 
-        // 사용자 정보 반환
         Map<String, String> response = new HashMap<>();
         response.put("empNo", user.getEmpNo());
         response.put("loginId", user.getLoginId());
@@ -910,17 +715,6 @@ public class UserVerifyController {
 
         return ResponseEntity.ok(response);
     }
-}
-
-// 요청 DTO
-public class VerifyUserRequest {
-    private String loginId;
-    private String empNo;
-
-    public String getLoginId() { return loginId; }
-    public void setLoginId(String loginId) { this.loginId = loginId; }
-    public String getEmpNo() { return empNo; }
-    public void setEmpNo(String empNo) { this.empNo = empNo; }
 }
 ```
 
@@ -945,7 +739,8 @@ EMBED_HMAC_SECRET=your-shared-hmac-secret-key
 | 엔드포인트 | 메서드 | 시나리오 | 호출 주체 | 설명 |
 |-----------|--------|---------|----------|------|
 | `/api/auth/embed-token` | POST | 1 | 레거시 서버 | JWT 토큰 발급 (API Key 인증) |
-| `/api/auth/token` | POST | 1 | 사용자 브라우저 | JWT 토큰 검증 + 쿠키 설정 + 리다이렉트 |
+| `/api/auth/token` | GET | 1 | 사용자 브라우저 | JWT 토큰 검증 + 쿠키 설정 + 리다이렉트 (권장) |
+| `/api/auth/token` | POST | 1 | 사용자 브라우저 | JWT 토큰 검증 + 쿠키 설정 + 리다이렉트 (Form POST) |
 | `/simple-chat/{appId}` | GET | 2 | 사용자 브라우저 | 익명 임베드 챗봇 페이지 |
 | `/embed/{appId}` | GET | 3 | 사용자 브라우저 | 인증형 임베드 챗봇 페이지 |
 | `/api/auth/embed-verify` | POST | 3 | 챗봇 시스템 (내부) | HMAC 검증 + 사용자 확인 + JWT 발급 |
@@ -1013,16 +808,19 @@ curl -X POST https://ai-chatbot.dgist.ac.kr/api/auth/embed-token \
 # {"success":true,"token":"eyJhbG...","expiresIn":28800}
 ```
 
-#### 시나리오 1: token 검증 테스트 (Form POST)
+#### 시나리오 1: token 검증 테스트
 
 ```bash
-# Form POST로 토큰 전달 (리다이렉트 확인)
+# 방법 A: GET 리다이렉트 (권장)
+curl -v "https://ai-chatbot.dgist.ac.kr/api/auth/token?token=eyJhbG..."
+
+# 방법 B: Form POST
 curl -X POST https://ai-chatbot.dgist.ac.kr/api/auth/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "token=eyJhbG..." \
   -v
 
-# 예상 응답:
+# 예상 응답 (공통):
 # HTTP/1.1 302 Found
 # Location: /
 # Set-Cookie: auth_token=eyJ...; HttpOnly; Secure; ...
@@ -1057,21 +855,6 @@ curl -X POST https://ai-chatbot.dgist.ac.kr/api/auth/embed-verify \
 
 # 예상 응답:
 # {"success":true,"user":{"empNo":"EMP001","loginId":"hong123","name":"홍길동","role":"user"}}
-```
-
-#### 시나리오 3: 레거시 사용자 확인 API 테스트
-
-```bash
-# 레거시 시스템의 verify-user API 테스트
-curl -X POST https://portal.dgist.ac.kr/api/verify-user \
-  -H "Content-Type: application/json" \
-  -d '{
-    "loginId": "hong123",
-    "empNo": "EMP001"
-  }'
-
-# 예상 응답:
-# {"empNo":"EMP001","loginId":"hong123","name":"홍길동","department":"정보통신융합전공","role":"user"}
 ```
 
 ### 5.5 보안 주의사항
@@ -1117,10 +900,11 @@ curl -X POST https://portal.dgist.ac.kr/api/verify-user \
 ### 시나리오 1 체크리스트
 
 - [ ] 챗봇 운영자에게 `EMBED_API_KEY` 값 전달받기
-- [ ] 레거시 서버에 `EMBED_API_KEY` 환경변수 설정
-- [ ] `ChatbotTokenService` (또는 동등한 코드) 구현
-- [ ] JSP/Thymeleaf 자동 제출 폼 페이지 작성
-- [ ] 레거시 포털에 "AI 챗봇" 메뉴/링크 추가
+- [ ] 레거시 서버에 `EMBED_API_KEY` 설정 (properties 또는 환경변수)
+- [ ] 챗봇 호스트 URL 설정 (프로토콜, 호스트, 포트)
+- [ ] 토큰 발급 서비스 구현 (`POST /api/auth/embed-token` 호출)
+- [ ] 컨트롤러 구현 (`redirect:` 방식 또는 JSP auto-submit 방식)
+- [ ] 레거시 포털에 "AI 챗봇" 메뉴/링크 추가 (`window.open` 또는 팝업)
 - [ ] 개발 환경에서 토큰 발급 및 리다이렉트 테스트
 - [ ] 프로덕션 환경에서 HTTPS 통신 확인
 

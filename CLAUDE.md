@@ -310,12 +310,37 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 - [x] i18n: embed.authFailed, embed.verifying 키 추가
 - [x] 레거시 연동 가이드: `docs/legacy-integration-guide.md`
 - [x] HMAC 테스트 스크립트: `scripts/generate-embed-hmac.ts`
+- [x] SimpleChatMain embed 모드 수정 (appId prop 전달, hasSetAppConfig 로직)
+- [x] 3개 시나리오 테스트 완료 (AI 포털, 익명 임베드, 인증형 임베드)
+
+### UI 커스터마이징 (2026-02-10) ✅
+- [x] 채팅 AI 아이콘 커스텀 (`bot_icon.svg`)
+  - `app/components/chat/icons/bot_icon.svg` → CSS background 적용
+  - CSS 테두리 클리핑: `background-size: 115%` + `border-radius: 50%` + `overflow: hidden`
+- [x] 사용자 아이콘 제거 (`question/index.tsx`에서 아바타 섹션 삭제)
+- [x] 플로팅 버튼 커스텀 아이콘 (`chat_floating_button.svg`)
+  - `public/icons/chat_floating_button.svg` → `<img>` 태그 사용
+  - CSS 테두리 클리핑: `object-cover scale-[1.25]` + `overflow-hidden`
+- [x] 채팅 닫기 버튼 커스텀 아이콘 (`chat_close_button.svg`)
+  - `public/icons/chat_close_button.svg`
+- [x] Middleware 정적 파일 제외: `/icons/` 경로 추가 (307 리다이렉트 방지)
+- [x] 임베드 코드 모달 업데이트 (플로팅형 HTML에 커스텀 SVG 아이콘 적용)
+
+### 관리자 경로 버그 수정 (2026-02-10) ✅
+- [x] `app-table.tsx` 하드코딩된 `/admin/apps/${id}/edit` → `adminPath()` 사용
+
+### 도메인 환경변수 관리 (2026-02-10) ✅
+- [x] `NEXT_PUBLIC_APP_URL` 환경변수로 기본 도메인 관리 (프로덕션: `https://ask.dgist.ac.kr`)
+- [x] `NEXT_PUBLIC_ALLOWED_EMBED_ORIGINS` 환경변수로 postMessage 보안
+- [x] 임베드 코드 모달에서 baseUrl 동적 생성
+- [x] embed-chat.tsx, chat-popup.tsx에 postMessage origin 검증 추가
 
 ---
 
 ## 🔄 현재 상태
 
-**상태**: Phase 1~14 + Phase 10-2 + 관리자 접근 제어 + 경로 보안 + 채팅 개선 + 레거시 인증 연동 모두 완료
+**상태**: Phase 1~14 + Phase 10-2 + 관리자 접근 제어 + 경로 보안 + 채팅 개선 + 레거시 인증 연동 + UI 커스터마이징 + 도메인 관리 모두 완료
+**진행 중**: 레거시 인증 실제 연동 테스트 (시나리오 1 완료, 시나리오 3 다음 세션 예정)
 
 **상세 계획서**:
 - [`docs/phase10-plan.md`](docs/phase10-plan.md) - 에러 핸들링 강화
@@ -324,6 +349,7 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 - [`docs/phase13-plan.md`](docs/phase13-plan.md) - 보안 검토 (배포 전 진행)
 
 **주요 커밋 이력**:
+- `e651367` 레거시 인증 연동 + UI 커스터마이징 + 도메인 관리 (feature/legacy-auth-integration 머지)
 - `8375160` 레거시 API 에러 응답 포맷 통일 (Phase 10-2)
 - `09b9d03` 관리자 접근 제어, 피드백 개선, 경로 보안, 통계 버그 수정, Phase 14
 - `73c6c0d` Middleware 헤더 보존 + 세션 관리 버그 수정
@@ -403,44 +429,30 @@ Dify 플랫폼과 연동되는 Next.js 기반 대화형 웹 애플리케이션�
 
 ---
 
-## 📌 다음에 해야 할 작업 (우선순위)
+## 📌 남은 작업
 
-### 완료: Phase 10 - 에러 핸들링 강화 + 코드 품질 개선 ✅
-- [x] 작업 계획 수립 → [`docs/phase10-plan.md`](docs/phase10-plan.md)
-- [x] Phase 10-1: Next.js Error Boundary 추가
-- [x] Phase 10-2: API 응답 포맷 통일 → `8375160`
-- [x] Phase 10-3: `any` 타입 제거 (TypeScript 강화)
-- [x] Phase 10-4: 입력값 검증 추가
-- [x] Phase 10-5: Repository 에러 핸들링 보강
-
-### 완료: Phase 11 - 통계 자동 집계 + 에러 캡처 자동화 ✅
-- [x] 작업 계획 수립 → [`docs/phase11-plan.md`](docs/phase11-plan.md)
-- [x] Phase 11-1: 통계 데이터 자동 집계 (메시지 전송 시 DailyUsageStats 증분) → `0ac4ea2`
-- [x] Phase 11-2: 에러 캡처 자동화 (31개 API 파일, 41개 catch 블록) → `3b4ca58`
-
-### 완료: Phase 12 - 구조화된 로깅 시스템 ✅
-- [x] 작업 계획 수립 → [`docs/phase12-plan.md`](docs/phase12-plan.md)
-- [x] Phase 12-1: 로거 모듈 생성 → `e292941`
-- [x] Phase 12-2: API 라우트에 로거 적용 (34개 파일) → `1eb065c`
-- [x] Phase 12-3: 라이브러리에 로거 적용 (7개 파일) → `c3b5b70`
-- [x] Phase 12-4: 미들웨어에 Request ID 추가 → `30100f3`
-
-### 우선순위 1: 프로덕션 배포 전 (기능 개발 완료 후 진행)
+### 배포 전 필수
 - [ ] Phase 13: 보안 검토 및 취약점 수정 → [`docs/phase13-plan.md`](docs/phase13-plan.md)
-  - Embed 토큰 API 인증 (Critical)
   - 보안 헤더 추가 (Critical)
   - 입력값 검증 강화 5건 (High~Low)
-  - IP 스푸핑 완화, CSRF, Rate Limiting, Dify URL 검증 (추후)
-- [ ] E2E 테스트 작성 (Playwright)
-- [ ] 성능 최적화 (DB 쿼리, 번들 사이즈)
-- [x] 에러 핸들링 강화 → Phase 10 완료 (10-2 포함)
-- [x] 로깅 시스템 → Phase 12 완료
+  - IP 스푸핑 완화, CSRF, Rate Limiting, Dify URL 검증
+- [x] ~~레거시 인증 시스템 실제 연동 테스트~~ → 시나리오별 진행 중
+  - [x] 시나리오 1: AI 포털 접속 (API Key + JWT + 302 리다이렉트) — 2026-02-12 테스트 완료
+  - [ ] 시나리오 2: 익명 임베드 (iframe, 인증 없음) — 미진행
+  - [ ] **시나리오 3: 인증형 임베드 (HMAC-SHA256 서명) — 다음 세션에서 테스트 예정**
+    - 테스트 방법: `scripts/generate-embed-hmac.ts` 스크립트로 서명 URL 생성
+    - 확인 항목: HMAC 서명 검증, 레거시 사용자 확인 API 호출, JWT 발급, embed 페이지 인증 채팅
+    - 관련 파일: `app/api/auth/embed-verify/route.ts`, `lib/hmac.ts`, `lib/legacy-auth.ts`
+    - 환경변수: `EMBED_HMAC_SECRET`, `LEGACY_VERIFY_API_URL`
+    - 참고: [`docs/legacy-integration-guide.md`](docs/legacy-integration-guide.md) 섹션 4
 
-### 완료: 레거시 인증 연동 ✅
-- [x] **레거시 인증 연동 구현** - embed-token API Key, HMAC 서명, form POST 리다이렉트
-- [x] **레거시 연동 가이드** - `docs/legacy-integration-guide.md` (Java 예시 포함)
-- [ ] **인증형 임베드 테스트** - `npx ts-node scripts/generate-embed-hmac.ts` 사용
-- [ ] 레거시 인증 시스템 연동 테스트 (실제 레거시 서버 연동)
+### 배포 후
+- [ ] 성능 최적화 (DB 쿼리, 번들 사이즈)
+- [ ] 프로젝트 이름 변경 + 저장소 이전
+  - `webapp-conversation` → `AI-Chatbot` 으로 변경
+  - 새 GitHub 저장소 생성 후 remote 변경
+  - `package.json` name 수정, 폴더명 변경
+  - 커밋 히스토리 보존 (`git push -u origin main`)
 
 ---
 
@@ -510,10 +522,12 @@ webapp-conversation/
 │       ├── admin/              # 관리자 컴포넌트
 │       ├── portal/             # 포털 컴포넌트
 │       ├── providers/          # Context Providers
+│       ├── embed/              # 임베드 컴포넌트 (플로팅 버튼, 채팅 팝업)
 │       ├── welcome-screen/     # 환영 화면 컴포넌트 (Phase 8c)
 │       ├── example-questions/  # 예시 질문 컴포넌트 (Phase 8c)
 │       ├── sidebar/            # 사이드바 컴포넌트 (Phase 8c 개선)
 │       ├── chat/               # 채팅 컴포넌트 (Phase 8c 개선)
+│       │   └── icons/          # 채팅 아이콘 (bot_icon.svg 등)
 │       ├── simple-chat-main.tsx  # 심플형 채팅 UI
 │       └── simple-chat.tsx     # 채팅 컴포넌트
 │
@@ -541,6 +555,17 @@ webapp-conversation/
 ├── prisma/
 │   ├── schema.prisma           # DB 스키마
 │   └── migrations/             # 마이그레이션
+│
+├── public/
+│   └── icons/                  # 커스텀 아이콘 (플로팅 버튼, 닫기 버튼)
+│
+├── scripts/                    # 유틸리티 스크립트
+│   ├── generate-embed-token.ts # JWT 임베드 토큰 생성
+│   ├── generate-embed-hmac.ts  # HMAC 서명 URL 생성
+│   └── mock-legacy-server.ts   # 레거시 API Mock 서버
+│
+├── docs/                       # 문서
+│   └── legacy-integration-guide.md  # 레거시 시스템 연동 가이드 (Java 예시)
 │
 ├── middleware.ts               # Next.js 미들웨어 (인증 체크)
 ├── service/                    # API 서비스 계층
@@ -593,6 +618,10 @@ JWT_EXPIRY_HOURS=8                       # JWT + 쿠키 통일 만료 시간 (�
 EMBED_API_KEY=dev-test-api-key-change-in-production  # embed-token API 인증 키
 EMBED_HMAC_SECRET=dev-test-hmac-secret-change-in-production  # HMAC 서명 공유 비밀키
 LEGACY_VERIFY_API_URL=https://portal.dgist.ac.kr/api/auth/verify-user  # 레거시 사용자 확인 API
+
+# 도메인 및 보안
+NEXT_PUBLIC_APP_URL=https://ask.dgist.ac.kr  # 서비스 기본 URL (임베드 코드 생성 등에 사용)
+# NEXT_PUBLIC_ALLOWED_EMBED_ORIGINS=https://portal.dgist.ac.kr,https://intranet.dgist.ac.kr  # postMessage 허용 origin
 ```
 
 ### JWT 키 생성 방법
@@ -656,7 +685,7 @@ npm run start
 - **User 테이블 없음**: 사용자 정보는 DB에 저장하지 않음
 - **외부 인증 시스템**: Mock 또는 레거시 API로 사용자 인증
 - **JWT Payload**: empNo, loginId, name, role 포함
-- **JWT 만료**: 1시간
+- **JWT 만료**: `JWT_EXPIRY_HOURS` 환경변수 (기본값 8시간), 쿠키와 통일
 
 ### 익명 사용자 방식
 - **sessionId**: sessionStorage에 UUID 저장 (Phase 9a 변경)
@@ -672,10 +701,12 @@ npm run start
 | `/simple-chat/[appId]` | 조건부 | 챗봇 설정에 따라 결정 |
 | `/`, `/api/apps/public`, `/api/apps/[appId]/info` | 불필요 | 공개 API |
 | `/chat/[appId]` | 쿠키 | 인증 필수 |
+| `/embed/[appId]` | 조건부 | JWT/HMAC/익명 3모드 |
 | `/${ADMIN_BASE_PATH}/*` | 쿠키 + admin_token | 관리자 전용 (커스텀 경로) |
 | `/admin/*` | 차단 (404) | 커스텀 경로 설정 시 직접 접근 차단 |
 | `/api/admin/*` | admin_token | 관리자 API (경로 변경 없음) |
 | `/api/apps/[appId]/*` | 조건부 | 챗봇 설정 + 헤더 검사 |
+| `/icons/*` | 불필요 | 정적 아이콘 파일 (middleware 제외) |
 
 ---
 
@@ -870,7 +901,9 @@ npm run start
 
 ---
 
-**마지막 업데이트**: 2026-02-10
-**레거시 인증 연동 완료**: embed-token API Key 검증, JWT 만료 통일, form POST 리다이렉트, HMAC 서명 검증, embed-verify API
-**레거시 연동 가이드**: `docs/legacy-integration-guide.md` (Java 예시 포함)
-**다음 단계**: Phase 13 보안 검토 (배포 전 진행 예정), 레거시 서버 실제 연동 테스트
+**마지막 업데이트**: 2026-02-12
+**레거시 인증 연동 완료**: embed-token API Key 검증, JWT 만료 통일, form POST 리다이렉트, HMAC 서명 검증, embed-verify API, 3개 시나리오 테스트 통과
+**UI 커스터마이징 완료**: AI 채팅 아이콘, 플로팅 버튼/닫기 버튼 커스텀 SVG, 사용자 아이콘 제거
+**도메인 관리**: `NEXT_PUBLIC_APP_URL=https://ask.dgist.ac.kr`, postMessage origin 보안
+**레거시 실제 연동 테스트**: 시나리오 1 완료 (2026-02-12), 시나리오 3 다음 세션 예정
+**다음 단계**: 시나리오 3 인증형 임베드 테스트 → Phase 13 보안 검토 (배포 전 진행 예정)

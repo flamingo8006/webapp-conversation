@@ -22,6 +22,7 @@ export interface ChatbotAppPublic {
   requireAuth: boolean // 인증 필수 여부
   allowAnonymous: boolean // 익명 사용자 허용
   maxAnonymousMsgs: number | null // 익명 사용자 최대 메시지 수
+  showWorkflowSteps: boolean // Workflow 표시 설정
   groupId: string | null // Phase 14: 그룹 배정
   createdAt: Date
   createdBy: string | null // 생성자 ID (Phase 8b - 권한 관리)
@@ -50,6 +51,7 @@ export async function createChatbotApp(data: {
   requireAuth?: boolean
   allowAnonymous?: boolean
   maxAnonymousMsgs?: number
+  showWorkflowSteps?: boolean
   groupId?: string
   createdBy?: string
 }): Promise<ChatbotAppPublic> {
@@ -71,6 +73,7 @@ export async function createChatbotApp(data: {
       requireAuth: data.requireAuth ?? true,
       allowAnonymous: data.allowAnonymous ?? false,
       maxAnonymousMsgs: data.maxAnonymousMsgs,
+      showWorkflowSteps: data.showWorkflowSteps ?? true,
       groupId: data.groupId,
       createdBy: data.createdBy,
     },
@@ -101,6 +104,7 @@ export async function updateChatbotApp(
     requireAuth?: boolean
     allowAnonymous?: boolean
     maxAnonymousMsgs?: number
+    showWorkflowSteps?: boolean
     groupId?: string | null
     updatedBy?: string
   },
@@ -108,13 +112,14 @@ export async function updateChatbotApp(
   const { apiKey, ...updateData } = data
 
   // API Key가 제공된 경우에만 암호화하여 업데이트
+  const prismaData: Record<string, unknown> = { ...updateData }
   if (data.apiKey) {
-    updateData.apiKeyEncrypted = encrypt(data.apiKey)
+    prismaData.apiKeyEncrypted = encrypt(data.apiKey)
   }
 
   const app = await prisma.chatbotApp.update({
     where: { id },
-    data: updateData,
+    data: prismaData,
   })
 
   return toPublic(app)
@@ -223,6 +228,7 @@ function toPublic(app: ChatbotApp): ChatbotAppPublic {
     requireAuth: app.requireAuth,
     allowAnonymous: app.allowAnonymous,
     maxAnonymousMsgs: app.maxAnonymousMsgs,
+    showWorkflowSteps: app.showWorkflowSteps,
     groupId: app.groupId,
     createdAt: app.createdAt,
     createdBy: app.createdBy,

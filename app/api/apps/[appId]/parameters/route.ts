@@ -49,10 +49,13 @@ export async function GET(
     // 동적으로 ChatClient 생성
     const client = new ChatClient(app.apiKey, app.apiUrl)
 
-    // 앱 파라미터 조회
-    const { data } = await client.getApplicationParameters(difyUser)
+    const paramsRes = await client.getApplicationParameters(difyUser)
+    const data = paramsRes.data as Record<string, unknown>
 
-    return NextResponse.json(data as object)
+    // DB에 저장된 showWorkflowSteps 설정 포함
+    data.show_workflow_steps = app.showWorkflowSteps
+
+    return NextResponse.json(data)
   }
   catch (error: unknown) {
     logger.apiError(request, 'Get parameters error', { error })

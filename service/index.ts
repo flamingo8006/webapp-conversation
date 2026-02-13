@@ -58,10 +58,6 @@ export const updateFeedback = async ({ url, body }: { url: string, body: Feedbac
   return post(url, { body })
 }
 
-export const generationConversationName = async (id: string) => {
-  return post(`conversations/${id}/name`, { body: { auto_generate: true } })
-}
-
 // 세션 조회 또는 생성
 export const createOrGetSession = async (appId: string, difyConversationId?: string) => {
   return post(`apps/${appId}/sessions`, {

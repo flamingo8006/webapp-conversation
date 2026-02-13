@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       requireAuth,
       allowAnonymous,
       maxAnonymousMsgs,
+      showWorkflowSteps,
       groupId,
     } = body
 
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     // maxAnonymousMsgs를 숫자로 변환 (빈 문자열이나 null은 null로 처리)
     const parsedMaxAnonymousMsgs = maxAnonymousMsgs === '' || maxAnonymousMsgs === null || maxAnonymousMsgs === undefined
-      ? null
+      ? undefined
       : parseInt(maxAnonymousMsgs, 10)
 
     // 챗봇 앱 생성 (API Key 암호화 저장)
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
       requireAuth,
       allowAnonymous,
       maxAnonymousMsgs: parsedMaxAnonymousMsgs,
+      showWorkflowSteps: showWorkflowSteps ?? true,
       groupId: groupId || undefined,
       createdBy: admin.sub,
     })

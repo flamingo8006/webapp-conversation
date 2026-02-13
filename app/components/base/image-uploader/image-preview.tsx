@@ -2,7 +2,8 @@ import type { FC } from 'react'
 import { createPortal } from 'react-dom'
 import XClose from '@/app/components/base/icons/line/x-close'
 
-interface ImagePreviewProps {
+export interface ImagePreviewProps {
+  title?: string
   url: string
   onCancel: () => void
 }

@@ -72,6 +72,7 @@ interface IAnswerProps {
   isResponding?: boolean
   allToolIcons?: Record<string, string | Emoji>
   suggestionClick?: (suggestion: string) => void
+  showWorkflowSteps?: boolean
 }
 
 // The component needs to maintain its own state to control whether to display input component
@@ -82,6 +83,7 @@ const Answer: FC<IAnswerProps> = ({
   isResponding,
   allToolIcons,
   suggestionClick = () => { },
+  showWorkflowSteps = false,
 }) => {
   const { id, content, feedback, agent_thoughts, workflowProcess, suggestedQuestions = [], citation } = item
   const isAgentMode = !!agent_thoughts && agent_thoughts.length > 0
@@ -210,8 +212,8 @@ const Answer: FC<IAnswerProps> = ({
         </div>
         <div className={`${s.answerWrap} max-w-[calc(100%-3rem)]`}>
           <div className={`${s.answer} relative text-sm text-gray-900`}>
-            <div className={`ml-2 py-3 px-4 bg-gray-100 rounded-tr-2xl rounded-b-2xl ${workflowProcess && 'min-w-[480px]'}`}>
-              {workflowProcess && (
+            <div className={`ml-2 py-3 px-4 bg-gray-100 rounded-tr-2xl rounded-b-2xl ${showWorkflowSteps && workflowProcess && 'min-w-[480px]'}`}>
+              {showWorkflowSteps && workflowProcess && (
                 <WorkflowProcess data={workflowProcess} hideInfo />
               )}
               {(isResponding && (isAgentMode ? (!content && (agent_thoughts || []).filter(item => !!item.thought || !!item.tool).length === 0) : !content))

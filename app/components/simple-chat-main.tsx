@@ -58,6 +58,7 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
     transfer_methods: [TransferMethod.local_file],
   })
   const [fileConfig, setFileConfig] = useState<FileUpload | undefined>()
+  const [showWorkflowSteps, setShowWorkflowSteps] = useState(false)
 
   // Phase 8a-2: 현재 언어에 맞는 앱 이름 표시
   const currentLang = i18n.language
@@ -240,7 +241,8 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
         const currentConversation = conversations.find(item => item.id === _conversationId)
         const isNotNewConversation = !!currentConversation
 
-        const { user_input_form, opening_statement: introduction, file_upload, system_parameters, suggested_questions = [] }: any = appParams
+        const { user_input_form, opening_statement: introduction, file_upload, system_parameters, suggested_questions = [], show_workflow_steps }: any = appParams
+        setShowWorkflowSteps(!!show_workflow_steps)
         // Phase 8a: 사용자 언어 설정 우선, 앱 기본 언어로 덮어쓰지 않음
         // setLocaleOnClient(APP_INFO.default_language, true)
         setNewConversationInfo({
@@ -702,6 +704,7 @@ const SimpleChatMain: FC<ISimpleChatMainProps> = ({ appId: propAppId, appName })
                   visionConfig={visionConfig}
                   fileConfig={fileConfig}
                   suggestedQuestions={suggestedQuestions}
+                  showWorkflowSteps={showWorkflowSteps}
                 />
               </div>
             </div>

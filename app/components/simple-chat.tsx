@@ -41,6 +41,7 @@ export interface ISimpleChatProps {
   visionConfig?: VisionSettings
   fileConfig?: FileUpload
   suggestedQuestions?: string[]
+  showWorkflowSteps?: boolean
 }
 
 const SimpleChat: FC<ISimpleChatProps> = ({
@@ -56,6 +57,7 @@ const SimpleChat: FC<ISimpleChatProps> = ({
   visionConfig,
   fileConfig,
   suggestedQuestions = [],
+  showWorkflowSteps = false,
 }) => {
   const { t } = useTranslation()
   const { notify } = Toast
@@ -244,6 +246,7 @@ const SimpleChat: FC<ISimpleChatProps> = ({
                   onFeedback={onFeedback}
                   isResponding={isResponding && isLast}
                   suggestionClick={suggestionClick}
+                  showWorkflowSteps={showWorkflowSteps}
                 />
               )
             }

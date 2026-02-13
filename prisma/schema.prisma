@@ -34,6 +34,9 @@ model ChatbotApp {
   allowAnonymous    Boolean  @default(false) @map("allow_anonymous")     // 익명 사용자 허용
   maxAnonymousMsgs  Int?     @map("max_anonymous_msgs")                  // 익명 사용자 최대 메시지 수 (null=무제한)
 
+  // Workflow 표시 설정
+  showWorkflowSteps Boolean  @default(true) @map("show_workflow_steps")
+
   // Phase 14: 그룹 배정
   groupId           String?  @map("group_id")
 

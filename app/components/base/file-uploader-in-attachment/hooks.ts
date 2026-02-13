@@ -27,8 +27,9 @@ import { useToastContext } from '@/app/components/base/toast'
 import { TransferMethod } from '@/types/app'
 import { formatFileSize } from '@/utils/format'
 
-// noop: 원격 파일 업로드 미구현 (Dify remote file info API 미사용)
-const uploadRemoteFileInfo = noop
+// 원격 파일 업로드 미구현 (Dify remote file info API 미사용)
+
+const uploadRemoteFileInfo = (..._args: any[]): Promise<any> => Promise.reject(new Error('Not implemented'))
 
 export const useFileSizeLimit = (fileUploadConfig?: FileUploadConfigResponse) => {
   const imgSizeLimit = Number(fileUploadConfig?.image_file_size_limit) * 1024 * 1024 || IMG_SIZE_LIMIT

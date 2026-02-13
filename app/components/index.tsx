@@ -71,6 +71,7 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
     transfer_methods: [TransferMethod.local_file],
   })
   const [fileConfig, setFileConfig] = useState<FileUpload | undefined>()
+  const [showWorkflowSteps, setShowWorkflowSteps] = useState(false)
 
   useEffect(() => {
     if (displayAppName) {
@@ -199,6 +200,7 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
     if (id === '-1') {
       createNewChat()
       setConversationIdChangeBecauseOfNew(true)
+      setChatNotStarted() // WelcomeScreen 다시 표시
     }
     else {
       setConversationIdChangeBecauseOfNew(false)
@@ -271,7 +273,8 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
         const isNotNewConversation = !!currentConversation
 
         // fetch new conversation info
-        const { user_input_form, opening_statement: introduction, file_upload, system_parameters, suggested_questions = [] }: any = appParams
+        const { user_input_form, opening_statement: introduction, file_upload, system_parameters, suggested_questions = [], show_workflow_steps }: any = appParams
+        setShowWorkflowSteps(!!show_workflow_steps)
         // Phase 8a: 사용자 언어 설정 우선, 앱 기본 언어로 덮어쓰지 않음
         // setLocaleOnClient(APP_INFO.default_language, true)
         setNewConversationInfo({
@@ -330,21 +333,8 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
     notify({ type: 'error', message })
   }
 
-  const checkCanSend = () => {
-    if (currConversationId !== '-1') { return true }
-
-    if (!currInputs || !promptConfig?.prompt_variables) { return true }
-
-    const inputLens = Object.values(currInputs).length
-    const promptVariablesLens = promptConfig.prompt_variables.length
-
-    const emptyInput = inputLens < promptVariablesLens || Object.values(currInputs).find(v => !v)
-    if (emptyInput) {
-      logError(t('app.errorMessage.valueOfVarRequired'))
-      return false
-    }
-    return true
-  }
+  // Phase 8c에서 config scene (prompt 변수 입력 화면) 삭제 → 검증 불필요
+  const checkCanSend = () => true
 
   const [controlFocus, setControlFocus] = useState(0)
   const [openingSuggestedQuestions, setOpeningSuggestedQuestions] = useState<string[]>([])
@@ -841,6 +831,7 @@ const Main: FC<IMainProps> = ({ appId: propAppId }) => {
                 checkCanSend={checkCanSend}
                 visionConfig={visionConfig}
                 fileConfig={fileConfig}
+                showWorkflowSteps={showWorkflowSteps}
               />
             )}
         </div>

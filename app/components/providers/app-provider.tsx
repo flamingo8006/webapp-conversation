@@ -23,6 +23,8 @@ export interface AppConfig {
   requireAuth?: boolean
   allowAnonymous?: boolean
   maxAnonymousMsgs?: number | null
+  // Workflow 표시 설정
+  showWorkflowSteps?: boolean
   // Phase 14: 그룹 배정
   groupId?: string | null
   group?: { id: string, name: string } | null

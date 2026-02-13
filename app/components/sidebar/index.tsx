@@ -176,8 +176,11 @@ const Sidebar: FC<ISidebarProps> = ({
         isCollapsed ? 'justify-center' : 'justify-between',
       )}>
         {!isCollapsed && (
-          <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <MessageSquare className="w-3.5 h-3.5 text-white" />
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <MessageSquare className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">DGIST AI</span>
           </div>
         )}
         {onToggleCollapse && (

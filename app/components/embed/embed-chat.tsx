@@ -85,7 +85,7 @@ export function EmbedChat({ appId, app }: EmbedChatProps) {
         onClose={() => setIsOpen(false)}
         appName={app.name}
       >
-        <SimpleChatMain appId={appId} />
+        <SimpleChatMain appId={appId} params={{}} />
       </ChatPopup>
     </>
   )

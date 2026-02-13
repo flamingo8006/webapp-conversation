@@ -82,7 +82,6 @@ const publicPathPrefixes = [
   '/api/auth/embed-verify', // 레거시 연동: HMAC 서명 검증
   '/api/apps/public',
   '/api/admin/auth/login', // Phase 8b: 관리자 로그인 API
-  '/api/errors/report', // Phase 8b: 에러 리포트 API
   '/login', // Phase 9a: 안내 페이지로 변경됨
   '/_next',
   '/favicon.ico',

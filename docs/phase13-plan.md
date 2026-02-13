@@ -1,7 +1,7 @@
 # Phase 13: 보안 검토 및 취약점 수정
 
 **작성일**: 2026-02-07
-**상태**: 계획 수립 완료, 작업 대기
+**상태**: 계획 수립 완료 + 레거시 연동 테스트 진행 중
 
 ---
 
@@ -263,6 +263,51 @@ git revert <Phase13-3 커밋해시>
 
 ### #12 Dify 파일 URL 검증
 - Dify API 응답의 파일 URL 도메인 화이트리스트
+
+---
+
+## 레거시 인증 실제 연동 테스트
+
+Phase 13 보안 검토와 병행하여 레거시 인증 시스템 실제 연동 테스트를 진행합니다.
+
+### 시나리오 1: AI 포털 접속 ✅ (2026-02-12 완료)
+- [x] `POST /api/auth/embed-token` — API Key 인증 + JWT 토큰 발급
+- [x] `GET /api/auth/token?token=...` — 쿠키 설정 + 302 리다이렉트
+- [x] 포털 메인 페이지 정상 접속 확인
+
+### 시나리오 2: 익명 임베드 (미진행)
+- [ ] 공개 챗봇 iframe 삽입 테스트
+- [ ] sessionStorage 기반 세션 관리 확인
+
+### 시나리오 3: 인증형 임베드 — **다음 세션 테스트 예정**
+
+**테스트 절차**:
+1. `scripts/generate-embed-hmac.ts` 스크립트로 HMAC 서명된 embed URL 생성
+2. 브라우저에서 `/embed/{appId}?loginId=...&empNo=...&name=...&ts=...&sig=...` 접속
+3. 챗봇 시스템이 HMAC 서명 검증 수행 확인
+4. `LEGACY_VERIFY_API_URL`로 사용자 확인 API 호출 확인
+5. JWT 발급 + `embed_auth_token` 쿠키 설정 확인
+6. 인증된 상태로 채팅 정상 동작 확인
+
+**확인 항목**:
+- HMAC 서명 검증 성공/실패 케이스
+- 타임스탬프 만료 (5분) 케이스
+- 사용자 확인 API 응답 처리
+- embed 페이지에서 인증 채팅 동작
+
+**관련 파일**:
+- `app/api/auth/embed-verify/route.ts` — HMAC 검증 + 사용자 확인 + JWT 발급
+- `lib/hmac.ts` — HMAC-SHA256 서명 생성/검증 유틸리티
+- `lib/legacy-auth.ts` — `verifyUserWithLegacy()` 함수
+- `app/(embed)/embed/[appId]/page.tsx` — embed 페이지 (3모드: HMAC/JWT/익명)
+- `scripts/generate-embed-hmac.ts` — 테스트용 HMAC 서명 URL 생성 스크립트
+
+**환경변수 확인**:
+```bash
+EMBED_HMAC_SECRET=dev-test-hmac-secret-change-in-production
+LEGACY_VERIFY_API_URL=https://portal.dgist.ac.kr/api/auth/verify-user
+# Mock 모드에서는 scripts/mock-legacy-server.ts 실행 필요
+```
 
 ---
 

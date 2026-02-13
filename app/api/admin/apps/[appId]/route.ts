@@ -106,12 +106,13 @@ export async function PUT(
       requireAuth,
       allowAnonymous,
       maxAnonymousMsgs,
+      showWorkflowSteps,
       groupId,
     } = body
 
     // maxAnonymousMsgs를 숫자로 변환 (빈 문자열이나 null은 null로 처리)
     const parsedMaxAnonymousMsgs = maxAnonymousMsgs === '' || maxAnonymousMsgs === null || maxAnonymousMsgs === undefined
-      ? null
+      ? undefined
       : parseInt(maxAnonymousMsgs, 10)
 
     // 챗봇 앱 수정 (API Key 제공 시 재암호화)
@@ -132,6 +133,7 @@ export async function PUT(
       requireAuth,
       allowAnonymous,
       maxAnonymousMsgs: parsedMaxAnonymousMsgs,
+      showWorkflowSteps,
       groupId: groupId !== undefined ? (groupId || null) : undefined,
       updatedBy: admin.sub,
     })
